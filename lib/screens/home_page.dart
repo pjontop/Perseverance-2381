@@ -150,7 +150,7 @@ class HomePage extends StatelessWidget {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: PerseveranceButton(
         onPressed: () {
           // Example: Open a dialog for quick actions
           showDialog(
@@ -159,15 +159,19 @@ class HomePage extends StatelessWidget {
               title: Text('Quick Action'),
               content: Text('Choose a quick action to perform.'),
               actions: [
-                TextButton(
+                PerseveranceButton(
                   onPressed: () => Navigator.pop(context),
                   child: Text('Close'),
+                  tooltip: 'Close quick action dialog',
+                  semanticsLabel: 'Close quick action dialog',
                 ),
               ],
             ),
           );
         },
         child: const Icon(Icons.add),
+        tooltip: 'Add new item or quick action',
+        semanticsLabel: 'Add new item or quick action',
       ),
     );
   }
