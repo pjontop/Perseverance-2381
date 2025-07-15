@@ -113,4 +113,23 @@ class InventoryItem {
     if (lastUpdated == null) return 'Never';
     return '${lastUpdated!.month}/${lastUpdated!.day}/${lastUpdated!.year}';
   }
+
+  static InventoryItem fromJson(Map<String, dynamic> json) {
+    return InventoryItem(
+      id: json['id'] ?? json['\$id'] ?? '',
+      name: json['name'] ?? '',
+      description: json['description'] ?? '',
+      category: InventoryCategory.values.firstWhere(
+        (e) => e.name == (json['category']?.toString()?.toLowerCase() ?? ''),
+        orElse: () => InventoryCategory.other,
+      ),
+      quantity: json['quantity'] is int ? json['quantity'] : int.tryParse(json['quantity']?.toString() ?? '') ?? 0,
+      minimumStock: json['minimumStock'] is int ? json['minimumStock'] : int.tryParse(json['minimumStock']?.toString() ?? '') ?? 0,
+      location: json['location'] ?? '',
+      partNumber: json['partNumber'] ?? '',
+      supplier: json['supplier'],
+      cost: json['cost'] is num ? (json['cost'] as num).toDouble() : double.tryParse(json['cost']?.toString() ?? ''),
+      lastUpdated: json['lastUpdated'] != null ? DateTime.tryParse(json['lastUpdated']) : null,
+    );
+  }
 } 

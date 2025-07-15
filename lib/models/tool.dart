@@ -86,6 +86,24 @@ class Tool {
     return '${lastMaintenance!.month}/${lastMaintenance!.day}/${lastMaintenance!.year}';
   }
 
+  static Tool fromJson(Map<String, dynamic> json) {
+    return Tool(
+      id: json['id'] ?? json['\$id'] ?? '',
+      name: json['name'] ?? '',
+      description: json['description'] ?? '',
+      status: ToolStatus.values.firstWhere(
+        (e) => e.name == (json['status']?.toString()?.toLowerCase() ?? ''),
+        orElse: () => ToolStatus.available,
+      ),
+      checkedOutBy: json['checkedOutBy'],
+      checkedOutAt: json['checkedOutAt'] != null ? DateTime.tryParse(json['checkedOutAt']) : null,
+      dueBackAt: json['dueBackAt'] != null ? DateTime.tryParse(json['dueBackAt']) : null,
+      location: json['location'],
+      notes: json['notes'],
+      lastMaintenance: json['lastMaintenance'] != null ? DateTime.tryParse(json['lastMaintenance']) : null,
+    );
+  }
+
   int? get daysUntilDue {
     if (dueBackAt == null) return null;
     final now = DateTime.now();

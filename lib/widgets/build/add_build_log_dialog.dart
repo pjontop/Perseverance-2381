@@ -4,10 +4,14 @@ import '../../utils/colors.dart';
 
 class AddBuildLogDialog extends StatefulWidget {
   final Function(BuildLog) onBuildLogAdded;
+  final String teamId;
+  final String userId;
 
   const AddBuildLogDialog({
     super.key,
     required this.onBuildLogAdded,
+    required this.teamId,
+    required this.userId,
   });
 
   @override
@@ -27,6 +31,14 @@ class _AddBuildLogDialogState extends State<AddBuildLogDialog> {
   final List<String> _tags = [];
   final Map<String, double> _performanceMetrics = {};
 
+  // AI suggestion state
+  String? _suggestedTitle;
+  String? _suggestedDescription;
+  String? _tipTitle;
+  String? _tipDescription;
+  bool _loading = false;
+  String? _error;
+
   @override
   void dispose() {
     _titleController.dispose();
@@ -35,6 +47,50 @@ class _AddBuildLogDialogState extends State<AddBuildLogDialog> {
     _tagsController.dispose();
     _robotVersionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchTitleSuggestion(String input) async {
+    // TODO: Replace with actual AI service call
+    if (input.isEmpty) {
+      setState(() {
+        _suggestedTitle = null;
+        _tipTitle = null;
+      });
+      return;
+    }
+    if (input.length < 4) {
+      setState(() {
+        _suggestedTitle = null;
+        _tipTitle = 'Try to be more descriptive.';
+      });
+    } else {
+      setState(() {
+        _suggestedTitle = 'Document $input for future reference';
+        _tipTitle = null;
+      });
+    }
+  }
+
+  Future<void> _fetchDescriptionSuggestion(String input) async {
+    // TODO: Replace with actual AI service call
+    if (input.isEmpty) {
+      setState(() {
+        _suggestedDescription = null;
+        _tipDescription = null;
+      });
+      return;
+    }
+    if (input.length < 8) {
+      setState(() {
+        _suggestedDescription = null;
+        _tipDescription = 'Add more details for clarity.';
+      });
+    } else {
+      setState(() {
+        _suggestedDescription = 'Include steps, issues, and results.';
+        _tipDescription = null;
+      });
+    }
   }
 
   @override
@@ -61,6 +117,7 @@ class _AddBuildLogDialogState extends State<AddBuildLogDialog> {
                   labelText: 'Title',
                   border: OutlineInputBorder(),
                 ),
+                onChanged: (v) => _fetchTitleSuggestion(v),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter a title';
@@ -68,6 +125,31 @@ class _AddBuildLogDialogState extends State<AddBuildLogDialog> {
                   return null;
                 },
               ),
+              if (_suggestedTitle != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _titleController.text = _suggestedTitle!),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.lightbulb, size: 16, color: Colors.amber),
+                        const SizedBox(width: 4),
+                        Text('Suggested: $_suggestedTitle', style: TextStyle(color: Colors.amber[800], fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                ),
+              if (_tipTitle != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2.0),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, size: 14, color: Colors.blueGrey),
+                      const SizedBox(width: 4),
+                      Text('Tip: $_tipTitle', style: const TextStyle(color: Colors.blueGrey, fontSize: 12)),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 16),
               
               // Description
@@ -77,6 +159,7 @@ class _AddBuildLogDialogState extends State<AddBuildLogDialog> {
                   labelText: 'Description',
                   border: OutlineInputBorder(),
                 ),
+                onChanged: (v) => _fetchDescriptionSuggestion(v),
                 maxLines: 3,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -85,6 +168,31 @@ class _AddBuildLogDialogState extends State<AddBuildLogDialog> {
                   return null;
                 },
               ),
+              if (_suggestedDescription != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _descriptionController.text = _suggestedDescription!),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.lightbulb, size: 16, color: Colors.amber),
+                        const SizedBox(width: 4),
+                        Text('Suggested: $_suggestedDescription', style: TextStyle(color: Colors.amber[800], fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                ),
+              if (_tipDescription != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2.0),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, size: 14, color: Colors.blueGrey),
+                      const SizedBox(width: 4),
+                      Text('Tip: $_tipDescription', style: const TextStyle(color: Colors.blueGrey, fontSize: 12)),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 16),
               
               // Robot Version
@@ -330,11 +438,12 @@ class _AddBuildLogDialogState extends State<AddBuildLogDialog> {
 
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
+      final now = DateTime.now();
       final buildLog = BuildLog(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: '', // Appwrite will generate the real ID
         title: _titleController.text,
         description: _descriptionController.text,
-        date: DateTime.now(),
+        date: now,
         status: _selectedStatus,
         progress: _progress,
         author: _authorController.text,
@@ -342,7 +451,6 @@ class _AddBuildLogDialogState extends State<AddBuildLogDialog> {
         robotVersion: _robotVersionController.text,
         performanceMetrics: Map.from(_performanceMetrics),
       );
-      
       widget.onBuildLogAdded(buildLog);
       Navigator.of(context).pop();
     }

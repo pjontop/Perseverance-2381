@@ -1,5 +1,8 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:appwrite/appwrite.dart';
+import 'package:appwrite/models.dart' as appwrite_models;
+import 'package:appwrite/enums.dart';
 import '../config/appwrite_config.dart';
 
 class StorageService {
@@ -52,30 +55,31 @@ class StorageService {
     }
   }
 
-  // Get file download URL
-  Future<String> getFileDownloadUrl({
+  // Get file download (returns bytes)
+  Future<Uint8List> getFileDownloadUrl({
     required String bucketId,
     required String fileId,
   }) async {
     try {
-      return _storage.getFileDownload(
+      return await _storage.getFileDownload(
         bucketId: bucketId,
         fileId: fileId,
       );
     } catch (e) {
-      throw Exception('Failed to get file download URL: $e');
+      throw Exception('Failed to get file download: $e');
     }
   }
 
-  // Get file preview URL
-  Future<String> getFilePreviewUrl({
+  // Get file preview (returns bytes)
+  Future<Uint8List> getFilePreviewUrl({
     required String bucketId,
     required String fileId,
     int? width,
     int? height,
     String? gravity,
     int? quality,
-    int? border,
+    int? borderWidth,
+    String? borderColor,
     int? borderRadius,
     double? opacity,
     int? rotation,
@@ -83,22 +87,23 @@ class StorageService {
     String? output,
   }) async {
     try {
-      return _storage.getFilePreview(
+      return await _storage.getFilePreview(
         bucketId: bucketId,
         fileId: fileId,
         width: width,
         height: height,
-        gravity: gravity,
+        gravity: gravity != null ? ImageGravity.values.firstWhere((g) => g.name == gravity, orElse: () => ImageGravity.center) : null,
         quality: quality,
-        border: border,
+        borderWidth: borderWidth,
+        borderColor: borderColor,
         borderRadius: borderRadius,
         opacity: opacity,
         rotation: rotation,
         background: background,
-        output: output,
+        output: output != null ? ImageFormat.values.firstWhere((f) => f.name == output, orElse: () => ImageFormat.jpg) : null,
       );
     } catch (e) {
-      throw Exception('Failed to get file preview URL: $e');
+      throw Exception('Failed to get file preview: $e');
     }
   }
 
@@ -118,24 +123,25 @@ class StorageService {
   }
 
   // List files in bucket
-  Future<FileList> listFiles({
+  Future<List<appwrite_models.File>> listFiles({
     required String bucketId,
     List<String>? queries,
     String? search,
   }) async {
     try {
-      return await _storage.listFiles(
+      final result = await _storage.listFiles(
         bucketId: bucketId,
         queries: queries,
         search: search,
       );
+      return result.files;
     } catch (e) {
       throw Exception('Failed to list files: $e');
     }
   }
 
   // Get file info
-  Future<File> getFile({
+  Future<appwrite_models.File> getFile({
     required String bucketId,
     required String fileId,
   }) async {
@@ -150,16 +156,18 @@ class StorageService {
   }
 
   // Update file
-  Future<File> updateFile({
+  Future<appwrite_models.File> updateFile({
     required String bucketId,
     required String fileId,
     String? name,
+    List<String>? permissions,
   }) async {
     try {
       return await _storage.updateFile(
         bucketId: bucketId,
         fileId: fileId,
         name: name,
+        permissions: permissions,
       );
     } catch (e) {
       throw Exception('Failed to update file: $e');
@@ -169,7 +177,7 @@ class StorageService {
   // Upload profile photo
   Future<String> uploadProfilePhoto(String filePath) async {
     return await uploadFile(
-      bucketId: AppwriteConfig.profilePhotosBucket,
+      bucketId: AppwriteConfig.storageBucketId,
       filePath: filePath,
     );
   }
@@ -177,7 +185,7 @@ class StorageService {
   // Upload build photo
   Future<String> uploadBuildPhoto(String filePath) async {
     return await uploadFile(
-      bucketId: AppwriteConfig.buildPhotosBucket,
+      bucketId: AppwriteConfig.storageBucketId,
       filePath: filePath,
     );
   }
@@ -185,7 +193,7 @@ class StorageService {
   // Upload competition photo
   Future<String> uploadCompetitionPhoto(String filePath) async {
     return await uploadFile(
-      bucketId: AppwriteConfig.competitionPhotosBucket,
+      bucketId: AppwriteConfig.storageBucketId,
       filePath: filePath,
     );
   }
@@ -193,79 +201,8 @@ class StorageService {
   // Upload document
   Future<String> uploadDocument(String filePath) async {
     return await uploadFile(
-      bucketId: AppwriteConfig.documentsBucket,
+      bucketId: AppwriteConfig.storageBucketId,
       filePath: filePath,
     );
-  }
-
-  // Get profile photo URL
-  Future<String> getProfilePhotoUrl(String fileId) async {
-    return await getFileDownloadUrl(
-      bucketId: AppwriteConfig.profilePhotosBucket,
-      fileId: fileId,
-    );
-  }
-
-  // Get build photo URL
-  Future<String> getBuildPhotoUrl(String fileId) async {
-    return await getFileDownloadUrl(
-      bucketId: AppwriteConfig.buildPhotosBucket,
-      fileId: fileId,
-    );
-  }
-
-  // Get competition photo URL
-  Future<String> getCompetitionPhotoUrl(String fileId) async {
-    return await getFileDownloadUrl(
-      bucketId: AppwriteConfig.competitionPhotosBucket,
-      fileId: fileId,
-    );
-  }
-
-  // Get document URL
-  Future<String> getDocumentUrl(String fileId) async {
-    return await getFileDownloadUrl(
-      bucketId: AppwriteConfig.documentsBucket,
-      fileId: fileId,
-    );
-  }
-
-  // Batch upload files
-  Future<List<String>> batchUploadFiles({
-    required String bucketId,
-    required List<String> filePaths,
-  }) async {
-    final fileIds = <String>[];
-    
-    for (final filePath in filePaths) {
-      try {
-        final fileId = await uploadFile(
-          bucketId: bucketId,
-          filePath: filePath,
-        );
-        fileIds.add(fileId);
-      } catch (e) {
-        print('Failed to upload file in batch: $e');
-      }
-    }
-    
-    return fileIds;
-  }
-
-  // Batch delete files
-  Future<void> batchDeleteFiles({
-    required String bucketId,
-    required List<String> fileIds,
-  }) async {
-    for (final fileId in fileIds) {
-      try {
-        await deleteFile(
-          bucketId: bucketId,
-          fileId: fileId,
-        );
-      } catch (e) {
-        print('Failed to delete file in batch: $e');
-      }
-    }
   }
 } 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/app_providers.dart';
 import '../../utils/colors.dart';
+import '../../models/competition/alliance_recommendations_state.dart';
 
 class AllianceRecommendationsWidget extends ConsumerStatefulWidget {
   const AllianceRecommendationsWidget({super.key});
@@ -15,8 +16,17 @@ class _AllianceRecommendationsWidgetState extends ConsumerState<AllianceRecommen
 
   @override
   Widget build(BuildContext context) {
-    final allianceState = ref.watch(allianceRecommendationsProvider);
-    final teamsAsync = ref.watch(teamsProvider(null));
+    final allianceRecommendationsState = ref.watch(allianceRecommendationsProvider);
+    final teamsAsync = ref.watch(teamsProvider(''));
+
+    Widget content;
+    if (allianceRecommendationsState.isLoading) {
+      content = _buildLoadingState();
+    } else if (allianceRecommendationsState.error != null) {
+      content = Center(child: Text('Error: ${allianceRecommendationsState.error}'));
+    } else {
+      content = _buildRecommendationsList(allianceRecommendationsState);
+    }
 
     return Column(
       children: [
@@ -24,11 +34,7 @@ class _AllianceRecommendationsWidgetState extends ConsumerState<AllianceRecommen
         const SizedBox(height: 16),
         _buildTeamSelector(teamsAsync),
         const SizedBox(height: 16),
-        Expanded(
-          child: allianceState.isLoading
-              ? _buildLoadingState()
-              : _buildRecommendationsList(allianceState),
-        ),
+        Expanded(child: content),
       ],
     );
   }

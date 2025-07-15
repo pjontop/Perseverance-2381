@@ -85,8 +85,8 @@ Below are the recommended maximum lengths for each field in the Appwrite collect
 | opponentTeam  | string   | 36         | required, teamId     |
 | matchNumber   | string   | 16         | required             |
 | alliance      | string   | 8          | enum, required       |
-| score         | int      | 32-bit     | optional             |
-| opponentScore | int      | 32-bit     | optional             |
+| score         | int      | 1024       | optional             |
+| opponentScore | int      | 1024       | optional             |
 | result        | string   | 8          | enum, required       |
 | notes         | string   | 512        | optional             |
 | scoutData     | string   | 2048       | optional, JSON       |

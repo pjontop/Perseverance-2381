@@ -22,6 +22,16 @@ class Event {
     this.imageUrl,
   });
 
+  factory Event.fromJson(Map<String, dynamic> json) => Event(
+    id: json['\$id'] ?? '',
+    title: json['title'] ?? '',
+    description: json['description'] ?? '',
+    dateTime: DateTime.tryParse(json['dateTime'] ?? '') ?? DateTime.now(),
+    location: json['location'] ?? '',
+    type: json['type'] ?? '',
+    imageUrl: json['imageUrl'],
+  );
+
   /// Days until the event
   int get daysUntil {
     final now = DateTime.now();

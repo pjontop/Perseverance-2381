@@ -3,6 +3,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../utils/colors.dart';
 import '../../services/haptic_service.dart';
+import '../../utils/ai_helpers.dart';
+import '../../providers/app_providers.dart';
+
+final teamProductivityInsightsProvider = FutureProvider<String>((ref) async {
+  final authState = ref.read(authProvider);
+  final teamId = (authState.valueOrNull?.teamId ?? '');
+  final tasksAsync = ref.read(teamCollectionProvider('tasks', teamId));
+  List<Map<String, dynamic>> tasks = [];
+  if (tasksAsync is AsyncData) {
+    tasks = (tasksAsync.value as List<dynamic>).cast<Map<String, dynamic>>();
+  }
+  final insights = await AIHelpers.analyzePerformance(tasks);
+  if (insights['recommendations'] != null && insights['recommendations'] is List) {
+    return (insights['recommendations'] as List).join('\n');
+  }
+  if (insights['summary'] != null) {
+    return insights['summary'];
+  }
+  return 'No insights available.';
+});
 
 class TeamProductivityWidget extends ConsumerStatefulWidget {
   const TeamProductivityWidget({super.key});
@@ -16,10 +36,59 @@ class _TeamProductivityWidgetState extends ConsumerState<TeamProductivityWidget>
 
   @override
   Widget build(BuildContext context) {
+    final insightsAsync = ref.watch(teamProductivityInsightsProvider);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
+          // Insights section
+          insightsAsync.when(
+            data: (insight) => Card(
+              color: PerseveranceColors.background,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.insights, color: Colors.amber, size: 24),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Insights',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: PerseveranceColors.buttonFill,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            insight,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: PerseveranceColors.secondaryText,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (e, _) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text('Could not load insights', style: TextStyle(color: Colors.red)),
+            ),
+          ),
+          const SizedBox(height: 16),
           _buildHeader(),
           const SizedBox(height: 16),
           _buildMetricSelector(),

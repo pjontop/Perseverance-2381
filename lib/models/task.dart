@@ -76,6 +76,18 @@ class Task {
     this.completedAt,
   });
 
+  factory Task.fromJson(Map<String, dynamic> json) => Task(
+    id: json['\$id'] ?? '',
+    title: json['title'] ?? '',
+    description: json['description'] ?? '',
+    dueDate: DateTime.tryParse(json['dueDate'] ?? '') ?? DateTime.now(),
+    priority: json['priority'] ?? 'Normal',
+    status: json['status'] ?? 'Pending',
+    assignedTo: json['assignedTo'] ?? '',
+    category: json['category'] ?? '',
+    completedAt: json['completedAt'] != null ? DateTime.tryParse(json['completedAt']) : null,
+  );
+
   int get daysUntilDue {
     final now = DateTime.now();
     final difference = dueDate.difference(now);

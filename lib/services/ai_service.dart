@@ -340,6 +340,7 @@ class AIService {
       
       if (quantity <= minimumStock) {
         alerts.add(InventoryAlert(
+          id: item['id'],
           itemId: item['id'],
           itemName: item['name'],
           alertType: AlertType.lowStock,
@@ -358,15 +359,12 @@ class AIService {
   ) {
     // Simple local performance analysis
     if (matches.isEmpty) return {};
-    
-    final totalScore = matches.fold<int>(0, (sum, match) => 
-      sum + (match['scores']?['total'] ?? 0));
-    final averageScore = totalScore / matches.length;
-    
+    final double rawTotal = matches.fold<int>(0, (sum, match) => (sum + (match['scores']?['total'] ?? 0)).toInt()) / matches.length;
+    final int totalScore = rawTotal.toInt();
     return {
-      'average_score': averageScore,
+      'average_score': totalScore,
       'total_matches': matches.length,
-      'trend': averageScore > 80 ? 'improving' : 'needs_work',
+      'trend': totalScore > 80 ? 'improving' : 'needs_work',
       'recommendations': [
         'Focus on autonomous phase',
         'Improve driver skills',
@@ -400,7 +398,7 @@ class AIService {
     final weeksNeeded = (totalHours / availableHours).ceil();
     
     return {
-      'estimated_completion': DateTime.now().add(Duration(weeks: weeksNeeded)),
+      'estimated_completion': DateTime.now().add(Duration(days: weeksNeeded * 7)),
       'total_hours': totalHours,
       'available_hours': availableHours,
       'confidence': 0.8,

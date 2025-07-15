@@ -1,8 +1,9 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/app_providers.dart';
 import '../../utils/colors.dart';
+import '../../models/appwrite/match_model.dart';
+import '../../models/competition/live_match_state.dart';
 
 class LiveMatchWidget extends ConsumerStatefulWidget {
   const LiveMatchWidget({super.key});
@@ -12,7 +13,6 @@ class LiveMatchWidget extends ConsumerStatefulWidget {
 }
 
 class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
-  late Timer _timer;
   int _elapsedSeconds = 0;
   bool _isTimerRunning = false;
 
@@ -22,18 +22,13 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
     _startTimer();
   }
 
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
-
   void _startTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_isTimerRunning) {
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted && _isTimerRunning) {
         setState(() {
           _elapsedSeconds++;
         });
+        _startTimer();
       }
     });
   }
@@ -48,7 +43,7 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
   Widget build(BuildContext context) {
     final liveMatchState = ref.watch(liveMatchProvider);
     
-    if (!liveMatchState.isActive) {
+    if (!liveMatchState.isLive) {
       return _buildStartMatchCard();
     }
 
@@ -57,8 +52,6 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
         _buildMatchHeader(liveMatchState),
         const SizedBox(height: 16),
         _buildTimerSection(),
-        const SizedBox(height: 16),
-        _buildPhaseSelector(liveMatchState),
         const SizedBox(height: 16),
         _buildScoringSection(liveMatchState),
         const SizedBox(height: 16),
@@ -134,7 +127,7 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
               width: 12,
               height: 12,
               decoration: BoxDecoration(
-                color: state.allianceColor == 'red' ? Colors.red : Colors.blue,
+                color: Colors.red,
                 shape: BoxShape.circle,
               ),
             ),
@@ -144,7 +137,7 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Match ${state.matchId}',
+                    'Match ${state.currentMatch ?? "Unknown"}',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -152,7 +145,7 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
                     ),
                   ),
                   Text(
-                    '${state.allianceColor?.toUpperCase()} Alliance',
+                    'LIVE MATCH',
                     style: TextStyle(
                       fontSize: 14,
                       color: PerseveranceColors.secondaryText,
@@ -214,6 +207,9 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
                   onPressed: () {
                     setState(() {
                       _isTimerRunning = !_isTimerRunning;
+                      if (_isTimerRunning) {
+                        _startTimer();
+                      }
                     });
                   },
                   icon: Icon(
@@ -241,72 +237,6 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
     );
   }
 
-  Widget _buildPhaseSelector(LiveMatchState state) {
-    return Card(
-      color: PerseveranceColors.background,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Match Phase',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: PerseveranceColors.buttonFill,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: MatchPhase.values.map((phase) {
-                final isSelected = state.currentPhase == phase;
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        ref.read(liveMatchProvider.notifier).updatePhase(phase);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isSelected 
-                            ? PerseveranceColors.buttonFill 
-                            : Colors.transparent,
-                        foregroundColor: isSelected 
-                            ? PerseveranceColors.primaryButtonText 
-                            : PerseveranceColors.buttonFill,
-                        side: BorderSide(
-                          color: PerseveranceColors.buttonFill,
-                          width: 1,
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: Text(
-                        _getPhaseName(phase),
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _getPhaseName(MatchPhase phase) {
-    switch (phase) {
-      case MatchPhase.autonomous:
-        return 'AUTO';
-      case MatchPhase.driverControlled:
-        return 'DRIVER';
-      case MatchPhase.endgame:
-        return 'END';
-    }
-  }
-
   Widget _buildScoringSection(LiveMatchState state) {
     return Card(
       color: PerseveranceColors.background,
@@ -324,158 +254,64 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
               ),
             ),
             const SizedBox(height: 12),
-            _buildScoreButtons(state),
-            const SizedBox(height: 12),
-            _buildScoreDisplay(state),
+            _buildScoreCard('Autonomous', 'autonomous_score'),
+            const SizedBox(height: 8),
+            _buildScoreCard('Driver Controlled', 'driver_score'),
+            const SizedBox(height: 8),
+            _buildScoreCard('Endgame', 'endgame_score'),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildScoreButtons(LiveMatchState state) {
-    final currentPhase = state.currentPhase;
-    final scoreData = currentPhase == MatchPhase.autonomous 
-        ? state.autonomousData 
-        : currentPhase == MatchPhase.driverControlled 
-            ? state.driverControlledData 
-            : state.endgameData;
-
-    final scoreCategories = _getScoreCategories(currentPhase);
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: scoreCategories.map((category) {
-        final currentScore = scoreData[category] ?? 0;
-        return Column(
-          children: [
-            Text(
-              category,
+  Widget _buildScoreCard(String title, String key) {
+    final currentScore = 0; // TODO: Get from state.matchData
+    
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style: TextStyle(
+              color: PerseveranceColors.buttonFill,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        IconButton(
+          onPressed: () {
+            _updateScore(key, (currentScore - 1).clamp(0, 10));
+          },
+          icon: const Icon(Icons.remove),
+          color: PerseveranceColors.buttonFill,
+        ),
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: PerseveranceColors.buttonFill,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Center(
+            child: Text(
+              currentScore.toString(),
               style: TextStyle(
-                fontSize: 12,
-                color: PerseveranceColors.secondaryText,
+                color: PerseveranceColors.primaryButtonText,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  onPressed: () {
-                    final newScore = (currentScore - 1).clamp(0, 10);
-                    ref.read(liveMatchProvider.notifier).updateScore(category, newScore);
-                  },
-                  icon: const Icon(Icons.remove),
-                  style: IconButton.styleFrom(
-                    backgroundColor: PerseveranceColors.secondaryButtonText,
-                    foregroundColor: PerseveranceColors.secondaryText,
-                    minimumSize: const Size(32, 32),
-                  ),
-                ),
-                Container(
-                  width: 40,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: PerseveranceColors.buttonFill,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '$currentScore',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: PerseveranceColors.primaryButtonText,
-                      ),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () {
-                    final newScore = (currentScore + 1).clamp(0, 10);
-                    ref.read(liveMatchProvider.notifier).updateScore(category, newScore);
-                  },
-                  icon: const Icon(Icons.add),
-                  style: IconButton.styleFrom(
-                    backgroundColor: PerseveranceColors.secondaryButtonText,
-                    foregroundColor: PerseveranceColors.secondaryText,
-                    minimumSize: const Size(32, 32),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        );
-      }).toList(),
-    );
-  }
-
-  List<String> _getScoreCategories(MatchPhase? phase) {
-    switch (phase) {
-      case MatchPhase.autonomous:
-        return ['Triballs', 'Mobility', 'Park'];
-      case MatchPhase.driverControlled:
-        return ['Triballs', 'Goals', 'Poles'];
-      case MatchPhase.endgame:
-        return ['Climb', 'Park', 'Bonus'];
-      default:
-        return [];
-    }
-  }
-
-  Widget _buildScoreDisplay(LiveMatchState state) {
-    final totalScore = _calculateTotalScore(state);
-    
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: PerseveranceColors.primaryButtonText,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'Total Score',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: PerseveranceColors.background,
-            ),
           ),
-          Text(
-            '$totalScore',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: PerseveranceColors.background,
-            ),
-          ),
-        ],
-      ),
+        ),
+        IconButton(
+          onPressed: () {
+            _updateScore(key, (currentScore + 1).clamp(0, 10));
+          },
+          icon: const Icon(Icons.add),
+          color: PerseveranceColors.buttonFill,
+        ),
+      ],
     );
-  }
-
-  int _calculateTotalScore(LiveMatchState state) {
-    int total = 0;
-    
-    // Autonomous score
-    state.autonomousData.forEach((key, value) {
-      if (value is int) total += value;
-    });
-    
-    // Driver controlled score
-    state.driverControlledData.forEach((key, value) {
-      if (value is int) total += value;
-    });
-    
-    // Endgame score
-    state.endgameData.forEach((key, value) {
-      if (value is int) total += value;
-    });
-    
-    return total;
   }
 
   Widget _buildQuickActions() {
@@ -495,16 +331,19 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
               ),
             ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            Row(
               children: [
-                _buildQuickActionButton('Climb', Icons.trending_up),
-                _buildQuickActionButton('Park', Icons.local_parking),
-                _buildQuickActionButton('Foul', Icons.warning),
-                _buildQuickActionButton('Tech Foul', Icons.error),
-                _buildQuickActionButton('Disable', Icons.block),
-                _buildQuickActionButton('Reset', Icons.refresh),
+                Expanded(
+                  child: _buildActionButton('Goal Scored', Icons.sports_soccer),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildActionButton('Foul', Icons.warning),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildActionButton('Timeout', Icons.timer),
+                ),
               ],
             ),
           ],
@@ -513,18 +352,17 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
     );
   }
 
-  Widget _buildQuickActionButton(String label, IconData icon) {
+  Widget _buildActionButton(String label, IconData icon) {
     return ElevatedButton.icon(
       onPressed: () {
-        ref.read(liveMatchProvider.notifier).addNote('$label action recorded');
+        _addNote('$label action recorded');
       },
       icon: Icon(icon, size: 16),
-      label: Text(label),
+      label: Text(label, style: TextStyle(fontSize: 12)),
       style: ElevatedButton.styleFrom(
-        backgroundColor: PerseveranceColors.secondaryButtonText,
-        foregroundColor: PerseveranceColors.secondaryText,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        minimumSize: const Size(80, 36),
+        backgroundColor: PerseveranceColors.buttonFill,
+        foregroundColor: PerseveranceColors.primaryButtonText,
+        padding: const EdgeInsets.symmetric(vertical: 8),
       ),
     );
   }
@@ -547,7 +385,6 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
             ),
             const SizedBox(height: 12),
             TextField(
-              maxLines: 4,
               decoration: InputDecoration(
                 hintText: 'Add match notes...',
                 hintStyle: TextStyle(color: PerseveranceColors.secondaryText),
@@ -562,7 +399,7 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
               ),
               style: TextStyle(color: PerseveranceColors.buttonFill),
               onChanged: (value) {
-                ref.read(liveMatchProvider.notifier).addNote(value);
+                _addNote(value);
               },
             ),
           ],
@@ -572,36 +409,30 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
   }
 
   Widget _buildMatchControls(LiveMatchState state) {
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: () {
-              ref.read(liveMatchProvider.notifier).endMatch();
-            },
-            icon: const Icon(Icons.stop),
-            label: const Text('End Match'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+    return Card(
+      color: PerseveranceColors.background,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  _endMatch();
+                },
+                icon: const Icon(Icons.stop),
+                label: const Text('End Match'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
             ),
-          ),
+          ],
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: () => _showSaveDialog(state),
-            icon: const Icon(Icons.save),
-            label: const Text('Save Report'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: PerseveranceColors.buttonFill,
-              foregroundColor: PerseveranceColors.primaryButtonText,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -610,98 +441,68 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          'Start New Match',
-          style: TextStyle(color: PerseveranceColors.buttonFill),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Match Number',
-                labelStyle: TextStyle(color: PerseveranceColors.buttonFill),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      ref.read(liveMatchProvider.notifier).startMatch('Q1', 'red');
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Red'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      ref.read(liveMatchProvider.notifier).startMatch('Q1', 'blue');
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Blue'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showSaveDialog(LiveMatchState state) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Save Scout Report',
+          'Start Match',
           style: TextStyle(color: PerseveranceColors.buttonFill),
         ),
         content: Text(
-          'Save the current match data as a scout report?',
-          style: TextStyle(color: PerseveranceColors.secondaryText),
+          'Choose your alliance color:',
+          style: TextStyle(color: PerseveranceColors.buttonFill),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: PerseveranceColors.buttonFill),
-            ),
-          ),
-          ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              // TODO: Save scout report to database
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Scout report saved successfully'),
-                  backgroundColor: Colors.green,
-                ),
-              );
+              _startMatch('Q1', 'red');
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: PerseveranceColors.buttonFill,
-              foregroundColor: PerseveranceColors.primaryButtonText,
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
             ),
-            child: const Text('Save'),
+            child: const Text('Red Alliance'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _startMatch('Q1', 'blue');
+            },
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Blue Alliance'),
           ),
         ],
       ),
     );
+  }
+
+  void _updatePhase(MatchPhase phase) {
+    if (mounted) {
+      ref.read(liveMatchProvider.notifier).updateMatchData({'currentPhase': phase.name});
+    }
+  }
+
+  void _updateScore(String category, int newScore) {
+    if (mounted) {
+      ref.read(liveMatchProvider.notifier).updateMatchData({category: newScore});
+    }
+  }
+
+  void _addNote(String note) {
+    if (mounted) {
+      ref.read(liveMatchProvider.notifier).updateMatchData({'notes': note});
+    }
+  }
+
+  void _endMatch() {
+    if (mounted) {
+      ref.read(liveMatchProvider.notifier).endLiveMatch();
+    }
+  }
+
+  void _startMatch(String matchId, String allianceColor) {
+    if (mounted) {
+      ref.read(liveMatchProvider.notifier).startLiveMatch(matchId);
+    }
   }
 } 

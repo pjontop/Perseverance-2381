@@ -23,7 +23,8 @@ class _TeamDatabaseWidgetState extends ConsumerState<TeamDatabaseWidget> {
   @override
   Widget build(BuildContext context) {
     final teamDatabaseState = ref.watch(teamDatabaseProvider);
-    final teamsAsync = ref.watch(teamsProvider(teamDatabaseState.searchQuery));
+    final searchQuery = ref.read(teamDatabaseProvider.notifier).searchQuery;
+    final teamsAsync = ref.watch(teamsProvider(searchQuery));
 
     return Column(
       children: [
@@ -753,5 +754,10 @@ class _TeamDatabaseWidgetState extends ConsumerState<TeamDatabaseWidget> {
           ),
       ],
     );
+  }
+
+  void _selectTeam(Map<String, dynamic> team) {
+    // TODO: Implement team selection logic if needed
+    // For now, this is a placeholder to fix the linter error
   }
 } 

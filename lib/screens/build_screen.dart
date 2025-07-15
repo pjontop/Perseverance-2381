@@ -7,15 +7,18 @@ import '../widgets/build/build_log_card.dart';
 import '../widgets/build/inventory_item_card.dart';
 import '../widgets/build/tool_card.dart';
 import '../widgets/build/add_build_log_dialog.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/app_providers.dart';
+import '../widgets/build/add_inventory_item_dialog.dart';
 
-class BuildScreen extends StatefulWidget {
+class BuildScreen extends ConsumerStatefulWidget {
   const BuildScreen({super.key});
 
   @override
-  State<BuildScreen> createState() => _BuildScreenState();
+  ConsumerState<BuildScreen> createState() => _BuildScreenState();
 }
 
-class _BuildScreenState extends State<BuildScreen> with TickerProviderStateMixin {
+class _BuildScreenState extends ConsumerState<BuildScreen> with TickerProviderStateMixin {
   late TabController _tabController;
   String _searchQuery = '';
   InventoryCategory? _selectedCategory;
@@ -38,6 +41,13 @@ class _BuildScreenState extends State<BuildScreen> with TickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    final teamId = (authState.valueOrNull?.teamId ?? '');
+    final userId = (authState.valueOrNull?.id ?? '');
+    final buildLogsAsync = ref.watch(_teamCollectionProvider('buildLogs', teamId));
+    final inventoryAsync = ref.watch(_teamCollectionProvider('inventory', teamId));
+    final toolsAsync = ref.watch(_teamCollectionProvider('tools', teamId));
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -65,25 +75,59 @@ class _BuildScreenState extends State<BuildScreen> with TickerProviderStateMixin
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildBuildLogsTab(),
-          _buildInventoryTab(),
-          _buildToolsTab(),
+          _buildBuildLogsTab(buildLogsAsync),
+          _buildInventoryTab(inventoryAsync),
+          _buildToolsTab(toolsAsync),
           _buildResourcesTab(),
         ],
       ),
-      floatingActionButton: _tabController.index == 0 ? FloatingActionButton(
+      floatingActionButton: _tabController.index == 1 ? FloatingActionButton(
         onPressed: () {
           showDialog(
             context: context,
-            builder: (context) => AddBuildLogDialog(
-              onBuildLogAdded: (buildLog) {
-                // TODO: Add build log to database
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Build log "${buildLog.title}" added successfully'),
-                    backgroundColor: PerseveranceColors.buttonFill,
-                  ),
+            builder: (context) => AddInventoryItemDialog(
+              teamId: teamId,
+              userId: userId,
+              onItemAdded: (item) async {
+                final databaseNotifier = ref.read(databaseProvider.notifier);
+                final now = DateTime.now();
+                final data = {
+                  'name': item.name,
+                  'description': item.description,
+                  'category': item.category.name,
+                  'quantity': item.quantity,
+                  'minimumStock': item.minimumStock,
+                  'location': item.location,
+                  'partNumber': item.partNumber,
+                  'supplier': item.supplier,
+                  'cost': item.cost,
+                  'teamId': teamId,
+                  'createdAt': now.toIso8601String(),
+                  'updatedAt': now.toIso8601String(),
+                };
+                final success = await databaseNotifier.createDocument(
+                  collectionId: 'inventory',
+                  data: data,
                 );
+                if (success) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Inventory item "${item.name}" added successfully'),
+                        backgroundColor: PerseveranceColors.buttonFill,
+                      ),
+                    );
+                  }
+                } else {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Failed to create inventory item.'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
               },
             ),
           );
@@ -95,279 +139,246 @@ class _BuildScreenState extends State<BuildScreen> with TickerProviderStateMixin
     );
   }
 
-  Widget _buildBuildLogsTab() {
-    final buildLogs = _getPlaceholderBuildLogs();
-    final filteredLogs = buildLogs.where((log) {
-      if (_searchQuery.isEmpty) return true;
-      return log.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-             log.description.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-             log.author.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-             log.robotVersion.toLowerCase().contains(_searchQuery.toLowerCase());
-    }).toList();
-
-    return Column(
-      children: [
-        // Search bar
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: TextField(
-            onChanged: (value) {
-              setState(() {
-                _searchQuery = value;
-              });
-            },
-            decoration: InputDecoration(
-              hintText: 'Search build logs...',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+  Widget _buildBuildLogsTab(AsyncValue<List<dynamic>> buildLogsAsync) {
+    return AsyncValueWidget(
+      value: buildLogsAsync,
+      builder: (buildLogs) {
+        final filteredLogs = buildLogs.where((log) {
+          if (_searchQuery.isEmpty) return true;
+          return (log['title'] ?? '').toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                 (log['description'] ?? '').toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                 (log['author'] ?? '').toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                 (log['robotVersion'] ?? '').toLowerCase().contains(_searchQuery.toLowerCase());
+        }).toList();
+        return Column(
+          children: [
+            // Search bar
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText: 'Search build logs...',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: PerseveranceColors.background.withOpacity(0.1),
+                ),
               ),
-              filled: true,
-              fillColor: PerseveranceColors.background.withOpacity(0.1),
             ),
-          ),
-        ),
-        
-        // Robot versions timeline
-        Container(
-          height: 60,
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: ['V1', 'V2', 'V3', 'V4'].map((version) => Container(
-              margin: const EdgeInsets.only(right: 12),
-              child: FilterChip(
-                label: Text(version),
-                selected: true,
-                onSelected: (selected) {
-                  // TODO: Filter by robot version
-                },
-                backgroundColor: PerseveranceColors.buttonFill,
-                selectedColor: PerseveranceColors.buttonFill,
-                labelStyle: const TextStyle(
-                  color: PerseveranceColors.primaryButtonText,
-                  fontWeight: FontWeight.w600,
-                ),
+            
+            // Robot versions timeline
+            Container(
+              height: 60,
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: ['V1', 'V2', 'V3', 'V4'].map((version) => Container(
+                  margin: const EdgeInsets.only(right: 12),
+                  child: FilterChip(
+                    label: Text(version),
+                    selected: true,
+                    onSelected: (selected) {
+                      // TODO: Filter by robot version
+                    },
+                    backgroundColor: PerseveranceColors.buttonFill,
+                    selectedColor: PerseveranceColors.buttonFill,
+                    labelStyle: const TextStyle(
+                      color: PerseveranceColors.primaryButtonText,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                )).toList(),
               ),
-            )).toList(),
-          ),
-        ),
-        
-        // Build logs list
-        Expanded(
-          child: ListView.builder(
-            itemCount: filteredLogs.length,
-            itemBuilder: (context, index) {
-              return BuildLogCard(
-                buildLog: filteredLogs[index],
-                onTap: () {
-                  // TODO: Navigate to build log details
+            ),
+            
+            // Build logs list
+            Expanded(
+              child: ListView.builder(
+                itemCount: filteredLogs.length,
+                itemBuilder: (context, index) {
+                  return BuildLogCard(
+                    buildLog: BuildLog.fromJson(filteredLogs[index]),
+                    onTap: () {}, // TODO: Navigation
+                    onEdit: () {}, // TODO: Edit
+                  );
                 },
-                onEdit: () {
-                  // TODO: Edit build log
-                },
-              );
-            },
-          ),
-        ),
-      ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildInventoryTab() {
-    final inventory = _getPlaceholderInventory();
-    final filteredInventory = inventory.where((item) {
-      if (_searchQuery.isEmpty && _selectedCategory == null) return true;
-      
-      bool matchesSearch = _searchQuery.isEmpty || 
-          item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          item.description.toLowerCase().contains(_searchQuery.toLowerCase());
-      
-      bool matchesCategory = _selectedCategory == null || item.category == _selectedCategory;
-      
-      return matchesSearch && matchesCategory;
-    }).toList();
-
-    return Column(
-      children: [
-        // Search and filter
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              TextField(
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
-                decoration: InputDecoration(
-                  hintText: 'Search inventory...',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: PerseveranceColors.background.withOpacity(0.1),
-                ),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<InventoryCategory>(
-                value: _selectedCategory,
-                decoration: const InputDecoration(
-                  labelText: 'Filter by Category',
-                  border: OutlineInputBorder(),
-                ),
-                items: [
-                  const DropdownMenuItem<InventoryCategory>(
-                    value: null,
-                    child: Text('All Categories'),
-                  ),
-                  ...InventoryCategory.values.map((category) => DropdownMenuItem(
-                    value: category,
-                    child: Text(category.displayName),
-                  )),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedCategory = value;
-                  });
-                },
-              ),
-            ],
-          ),
-        ),
-        
-        // Inventory list
-        Expanded(
-          child: ListView.builder(
-            itemCount: filteredInventory.length,
-            itemBuilder: (context, index) {
-              return InventoryItemCard(
-                item: filteredInventory[index],
-                onTap: () {
-                  // TODO: Navigate to item details
-                },
-                onEdit: () {
-                  // TODO: Edit inventory item
-                },
-                onQuantityChanged: (newQuantity) {
-                  // TODO: Update quantity
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Quantity updated to $newQuantity'),
-                      backgroundColor: PerseveranceColors.buttonFill,
+  Widget _buildInventoryTab(AsyncValue<List<dynamic>> inventoryAsync) {
+    return AsyncValueWidget(
+      value: inventoryAsync,
+      builder: (inventory) {
+        final filteredInventory = inventory.where((item) {
+          if (_searchQuery.isEmpty && _selectedCategory == null) return true;
+          bool matchesSearch = _searchQuery.isEmpty ||
+              (item['name'] ?? '').toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              (item['description'] ?? '').toLowerCase().contains(_searchQuery.toLowerCase());
+          bool matchesCategory = _selectedCategory == null || item['category'] == _selectedCategory?.toString();
+          return matchesSearch && matchesCategory;
+        }).toList();
+        return Column(
+          children: [
+            // Search and filter
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  TextField(
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Search inventory...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: PerseveranceColors.background.withOpacity(0.1),
                     ),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<InventoryCategory>(
+                    value: _selectedCategory,
+                    decoration: const InputDecoration(
+                      labelText: 'Filter by Category',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      const DropdownMenuItem<InventoryCategory>(
+                        value: null,
+                        child: Text('All Categories'),
+                      ),
+                      ...InventoryCategory.values.map((category) => DropdownMenuItem(
+                        value: category,
+                        child: Text(category.displayName),
+                      )),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedCategory = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+            
+            // Inventory list
+            Expanded(
+              child: ListView.builder(
+                itemCount: filteredInventory.length,
+                itemBuilder: (context, index) {
+                  return InventoryItemCard(
+                    item: InventoryItem.fromJson(filteredInventory[index]),
+                    onTap: () {}, // TODO: Navigation
+                    onEdit: () {}, // TODO: Edit
+                    onQuantityChanged: (newQuantity) {}, // TODO: Update
                   );
                 },
-              );
-            },
-          ),
-        ),
-      ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildToolsTab() {
-    final tools = _getPlaceholderTools();
-    final filteredTools = tools.where((tool) {
-      if (_searchQuery.isEmpty && _selectedToolStatus == null) return true;
-      
-      bool matchesSearch = _searchQuery.isEmpty || 
-          tool.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          tool.description.toLowerCase().contains(_searchQuery.toLowerCase());
-      
-      bool matchesStatus = _selectedToolStatus == null || tool.status == _selectedToolStatus;
-      
-      return matchesSearch && matchesStatus;
-    }).toList();
-
-    return Column(
-      children: [
-        // Search and filter
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              TextField(
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
-                decoration: InputDecoration(
-                  hintText: 'Search tools...',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+  Widget _buildToolsTab(AsyncValue<List<dynamic>> toolsAsync) {
+    return AsyncValueWidget(
+      value: toolsAsync,
+      builder: (tools) {
+        final filteredTools = tools.where((tool) {
+          if (_searchQuery.isEmpty && _selectedToolStatus == null) return true;
+          bool matchesSearch = _searchQuery.isEmpty ||
+              (tool['name'] ?? '').toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              (tool['description'] ?? '').toLowerCase().contains(_searchQuery.toLowerCase());
+          bool matchesStatus = _selectedToolStatus == null || tool['status'] == _selectedToolStatus?.toString();
+          return matchesSearch && matchesStatus;
+        }).toList();
+        return Column(
+          children: [
+            // Search and filter
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  TextField(
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Search tools...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: PerseveranceColors.background.withOpacity(0.1),
+                    ),
                   ),
-                  filled: true,
-                  fillColor: PerseveranceColors.background.withOpacity(0.1),
-                ),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<ToolStatus>(
-                value: _selectedToolStatus,
-                decoration: const InputDecoration(
-                  labelText: 'Filter by Status',
-                  border: OutlineInputBorder(),
-                ),
-                items: [
-                  const DropdownMenuItem<ToolStatus>(
-                    value: null,
-                    child: Text('All Status'),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<ToolStatus>(
+                    value: _selectedToolStatus,
+                    decoration: const InputDecoration(
+                      labelText: 'Filter by Status',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      const DropdownMenuItem<ToolStatus>(
+                        value: null,
+                        child: Text('All Status'),
+                      ),
+                      ...ToolStatus.values.map((status) => DropdownMenuItem(
+                        value: status,
+                        child: Text(status.displayName),
+                      )),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedToolStatus = value;
+                      });
+                    },
                   ),
-                  ...ToolStatus.values.map((status) => DropdownMenuItem(
-                    value: status,
-                    child: Text(status.displayName),
-                  )),
                 ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedToolStatus = value;
-                  });
+              ),
+            ),
+            
+            // Tools list
+            Expanded(
+              child: ListView.builder(
+                itemCount: filteredTools.length,
+                itemBuilder: (context, index) {
+                  return ToolCard(
+                    tool: Tool.fromJson(filteredTools[index]),
+                    onTap: () {}, // TODO: Navigation
+                    onCheckout: () {}, // TODO: Checkout
+                    onReturn: () {}, // TODO: Return
+                    onEdit: () {}, // TODO: Edit
+                  );
                 },
               ),
-            ],
-          ),
-        ),
-        
-        // Tools list
-        Expanded(
-          child: ListView.builder(
-            itemCount: filteredTools.length,
-            itemBuilder: (context, index) {
-              return ToolCard(
-                tool: filteredTools[index],
-                onTap: () {
-                  // TODO: Navigate to tool details
-                },
-                onCheckout: () {
-                  // TODO: Checkout tool
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Tool checked out successfully'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                },
-                onReturn: () {
-                  // TODO: Return tool
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Tool returned successfully'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                },
-                onEdit: () {
-                  // TODO: Edit tool
-                },
-              );
-            },
-          ),
-        ),
-      ],
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -557,246 +568,35 @@ class _BuildScreenState extends State<BuildScreen> with TickerProviderStateMixin
       ),
     );
   }
+} 
 
-  // Placeholder data methods
-  List<BuildLog> _getPlaceholderBuildLogs() {
-    final now = DateTime.now();
-    return [
-      BuildLog(
-        id: '1',
-        title: 'Drive Train Assembly V1',
-        description: 'Completed assembly of the main drive train system with 4-wheel drive',
-        date: now.subtract(const Duration(days: 5)),
-        status: BuildStatus.completed,
-        progress: 1.0,
-        author: 'Mike Rodriguez',
-        tags: ['Mechanical', 'Drive Train', 'V1'],
-        robotVersion: 'V1',
-        performanceMetrics: {'Speed': 15.5, 'Maneuverability': 85.0},
-      ),
-      BuildLog(
-        id: '2',
-        title: 'Lift Mechanism V2',
-        description: 'Working on the lift mechanism for game objects with improved design',
-        date: now.subtract(const Duration(hours: 6)),
-        status: BuildStatus.inProgress,
-        progress: 0.75,
-        author: 'Sarah Chen',
-        tags: ['Mechanical', 'Lift', 'V2'],
-        robotVersion: 'V2',
-        performanceMetrics: {'Lift Capacity': 8.0, 'Speed': 12.0},
-      ),
-      BuildLog(
-        id: '3',
-        title: 'Autonomous Programming V3',
-        description: 'Developing autonomous routines for competition with advanced algorithms',
-        date: now.subtract(const Duration(hours: 2)),
-        status: BuildStatus.testing,
-        progress: 0.6,
-        author: 'Alex Johnson',
-        tags: ['Programming', 'Autonomous', 'V3'],
-        robotVersion: 'V3',
-        performanceMetrics: {'Accuracy': 92.5, 'Efficiency': 88.0},
-      ),
-      BuildLog(
-        id: '4',
-        title: 'Sensor Integration V3',
-        description: 'Integrating various sensors for better robot control and feedback',
-        date: now,
-        status: BuildStatus.inProgress,
-        progress: 0.3,
-        author: 'Emma Wilson',
-        tags: ['Electronics', 'Sensors', 'V3'],
-        robotVersion: 'V3',
-        performanceMetrics: {'Accuracy': 95.0},
-      ),
-    ];
+// Helper: Provider for team collection
+final _teamCollectionProvider =
+    (String collection, String teamId) => FutureProvider<List<dynamic>>((ref) async {
+  final db = ref.watch(databaseServiceProvider);
+  switch (collection) {
+    case 'buildLogs':
+      return db.getTeamBuildLogs(teamId);
+    case 'inventory':
+      return db.getTeamInventory(teamId);
+    case 'tools':
+      return []; // TODO: Implement getTeamTools method
+    default:
+      return [];
   }
+});
 
-  List<InventoryItem> _getPlaceholderInventory() {
-    final now = DateTime.now();
-    return [
-      InventoryItem(
-        id: '1',
-        name: 'VEX 393 Motor',
-        description: 'High-speed motor for drive train',
-        category: InventoryCategory.motors,
-        quantity: 8,
-        minimumStock: 4,
-        location: 'Shelf A1',
-        partNumber: 'VEX-393',
-        supplier: 'VEX Robotics',
-        cost: 29.99,
-        lastUpdated: now.subtract(const Duration(days: 2)),
-      ),
-      InventoryItem(
-        id: '2',
-        name: 'VEX 269 Motor',
-        description: 'High-torque motor for lift mechanism',
-        category: InventoryCategory.motors,
-        quantity: 4,
-        minimumStock: 2,
-        location: 'Shelf A2',
-        partNumber: 'VEX-269',
-        supplier: 'VEX Robotics',
-        cost: 34.99,
-        lastUpdated: now.subtract(const Duration(days: 1)),
-      ),
-      InventoryItem(
-        id: '3',
-        name: 'Ultrasonic Sensor',
-        description: 'Distance measurement sensor',
-        category: InventoryCategory.sensors,
-        quantity: 2,
-        minimumStock: 3,
-        location: 'Shelf B1',
-        partNumber: 'VEX-US',
-        supplier: 'VEX Robotics',
-        cost: 19.99,
-        lastUpdated: now.subtract(const Duration(hours: 6)),
-      ),
-      InventoryItem(
-        id: '4',
-        name: 'Aluminum Channel',
-        description: 'Structural aluminum channel for frame',
-        category: InventoryCategory.structure,
-        quantity: 12,
-        minimumStock: 8,
-        location: 'Shelf C1',
-        partNumber: 'AL-CH-12',
-        supplier: 'VEX Robotics',
-        cost: 8.99,
-        lastUpdated: now.subtract(const Duration(days: 3)),
-      ),
-      InventoryItem(
-        id: '5',
-        name: 'Screws M3x10',
-        description: 'M3 screws 10mm length',
-        category: InventoryCategory.hardware,
-        quantity: 200,
-        minimumStock: 100,
-        location: 'Bin D1',
-        partNumber: 'SCREW-M3-10',
-        supplier: 'VEX Robotics',
-        cost: 0.15,
-        lastUpdated: now.subtract(const Duration(days: 5)),
-      ),
-      InventoryItem(
-        id: '6',
-        name: 'VEX Controller',
-        description: 'Main robot controller',
-        category: InventoryCategory.electronics,
-        quantity: 1,
-        minimumStock: 1,
-        location: 'Shelf E1',
-        partNumber: 'VEX-CTRL',
-        supplier: 'VEX Robotics',
-        cost: 199.99,
-        lastUpdated: now.subtract(const Duration(days: 1)),
-      ),
-      InventoryItem(
-        id: '7',
-        name: 'Pneumatic Cylinder',
-        description: 'Double-acting pneumatic cylinder',
-        category: InventoryCategory.pneumatics,
-        quantity: 0,
-        minimumStock: 2,
-        location: 'Shelf F1',
-        partNumber: 'PNEU-CYL',
-        supplier: 'VEX Robotics',
-        cost: 24.99,
-        lastUpdated: now.subtract(const Duration(days: 7)),
-      ),
-      InventoryItem(
-        id: '8',
-        name: 'Battery Pack',
-        description: '7.2V NiMH battery pack',
-        category: InventoryCategory.electronics,
-        quantity: 3,
-        minimumStock: 2,
-        location: 'Shelf E2',
-        partNumber: 'BAT-7.2V',
-        supplier: 'VEX Robotics',
-        cost: 49.99,
-        lastUpdated: now.subtract(const Duration(hours: 12)),
-      ),
-    ];
-  }
-
-  List<Tool> _getPlaceholderTools() {
-    final now = DateTime.now();
-    return [
-      Tool(
-        id: '1',
-        name: 'Cordless Drill',
-        description: '18V cordless drill with battery',
-        status: ToolStatus.available,
-        location: 'Tool Cabinet A',
-        lastMaintenance: now.subtract(const Duration(days: 30)),
-      ),
-      Tool(
-        id: '2',
-        name: 'Screwdriver Set',
-        description: 'Complete screwdriver set with various bits',
-        status: ToolStatus.checkedOut,
-        checkedOutBy: 'Mike Rodriguez',
-        checkedOutAt: now.subtract(const Duration(hours: 2)),
-        dueBackAt: now.add(const Duration(days: 1)),
-        location: 'Tool Cabinet B',
-      ),
-      Tool(
-        id: '3',
-        name: 'Wrench Set',
-        description: 'Metric and imperial wrench set',
-        status: ToolStatus.available,
-        location: 'Tool Cabinet C',
-        lastMaintenance: now.subtract(const Duration(days: 15)),
-      ),
-      Tool(
-        id: '4',
-        name: 'Soldering Iron',
-        description: 'Temperature-controlled soldering iron',
-        status: ToolStatus.maintenance,
-        location: 'Tool Cabinet D',
-        notes: 'Needs new tip',
-        lastMaintenance: now.subtract(const Duration(days: 60)),
-      ),
-      Tool(
-        id: '5',
-        name: 'Digital Caliper',
-        description: 'Precision digital caliper for measurements',
-        status: ToolStatus.checkedOut,
-        checkedOutBy: 'Sarah Chen',
-        checkedOutAt: now.subtract(const Duration(days: 1)),
-        dueBackAt: now.subtract(const Duration(hours: 6)),
-        location: 'Tool Cabinet E',
-      ),
-      Tool(
-        id: '6',
-        name: 'Level',
-        description: 'Spirit level for alignment',
-        status: ToolStatus.available,
-        location: 'Tool Cabinet F',
-        lastMaintenance: now.subtract(const Duration(days: 45)),
-      ),
-      Tool(
-        id: '7',
-        name: 'Wire Strippers',
-        description: 'Automatic wire strippers',
-        status: ToolStatus.available,
-        location: 'Tool Cabinet G',
-        lastMaintenance: now.subtract(const Duration(days: 20)),
-      ),
-      Tool(
-        id: '8',
-        name: 'Multimeter',
-        description: 'Digital multimeter for electrical testing',
-        status: ToolStatus.checkedOut,
-        checkedOutBy: 'Alex Johnson',
-        checkedOutAt: now.subtract(const Duration(hours: 4)),
-        dueBackAt: now.add(const Duration(hours: 2)),
-        location: 'Tool Cabinet H',
-      ),
-    ];
+// AsyncValueWidget for loading/error/data
+class AsyncValueWidget<T> extends StatelessWidget {
+  final AsyncValue<T> value;
+  final Widget Function(T data) builder;
+  const AsyncValueWidget({required this.value, required this.builder, super.key});
+  @override
+  Widget build(BuildContext context) {
+    return value.when(
+      data: builder,
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Error: $e')),
+    );
   }
 } 

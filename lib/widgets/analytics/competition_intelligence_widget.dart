@@ -3,6 +3,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math';
 import '../../utils/colors.dart';
 import '../../services/haptic_service.dart';
+import '../../utils/ai_helpers.dart';
+import '../../providers/app_providers.dart';
+
+final competitionIntelligenceInsightsProvider = FutureProvider<String>((ref) async {
+  final authState = ref.read(authProvider);
+  final teamId = (authState.valueOrNull?.teamId ?? '');
+  final matchesAsync = ref.read(teamCollectionProvider('matches', teamId));
+  List<Map<String, dynamic>> matches = [];
+  if (matchesAsync is AsyncData) {
+    matches = (matchesAsync.value as List<dynamic>).cast<Map<String, dynamic>>();
+  }
+  final insights = await AIHelpers.analyzePerformance(matches);
+  if (insights['recommendations'] != null && insights['recommendations'] is List) {
+    return (insights['recommendations'] as List).join('\n');
+  }
+  if (insights['summary'] != null) {
+    return insights['summary'];
+  }
+  return 'No insights available.';
+});
 
 class CompetitionIntelligenceWidget extends ConsumerStatefulWidget {
   const CompetitionIntelligenceWidget({super.key});
@@ -462,6 +482,7 @@ class _CompetitionIntelligenceWidgetState extends ConsumerState<CompetitionIntel
   }
 
   Widget _buildIntelligenceInsights() {
+    final insightsAsync = ref.watch(competitionIntelligenceInsightsProvider);
     return Card(
       color: PerseveranceColors.background,
       child: Padding(
@@ -478,7 +499,7 @@ class _CompetitionIntelligenceWidgetState extends ConsumerState<CompetitionIntel
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'AI Insights',
+                  'Insights',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -488,9 +509,17 @@ class _CompetitionIntelligenceWidgetState extends ConsumerState<CompetitionIntel
               ],
             ),
             const SizedBox(height: 12),
-            _buildInsightItem('Focus on autonomous consistency to improve win rate'),
-            _buildInsightItem('Alliance with teams strong in endgame strategies'),
-            _buildInsightItem('Practice defensive maneuvers against aggressive opponents'),
+            insightsAsync.when(
+              data: (insight) => Text(
+                insight,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: PerseveranceColors.secondaryText,
+                ),
+              ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text('Could not load insights', style: TextStyle(color: Colors.red)),
+            ),
           ],
         ),
       ),

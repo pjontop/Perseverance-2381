@@ -20,11 +20,20 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
 
+  // Use const constructors for better performance
   static const List<Widget> _screens = [
     DashboardScreen(),
     TeamScreen(),
     BuildScreen(),
     GamesScreen(),
+  ];
+
+  // Cache titles to avoid rebuilding
+  static const List<String> _titles = [
+    'Home',
+    'Team',
+    'Build',
+    'Games',
   ];
 
   @override
@@ -33,7 +42,7 @@ class _MainNavigationState extends State<MainNavigation> {
       appBar: AppBar(
         title: Text(
           _getTitle(),
-          style: TextStyle(
+          style: const TextStyle(
             color: PerseveranceColors.onSurface,
             fontWeight: FontWeight.w600,
             fontSize: 18,
@@ -41,10 +50,10 @@ class _MainNavigationState extends State<MainNavigation> {
         ),
         backgroundColor: PerseveranceColors.surface,
         elevation: 0,
-        iconTheme: IconThemeData(color: PerseveranceColors.onSurface),
+        iconTheme: const IconThemeData(color: PerseveranceColors.onSurface),
         actions: [
           IconButton(
-            icon: Icon(
+            icon: const Icon(
               Icons.settings,
               color: PerseveranceColors.onSurface,
             ),
@@ -60,7 +69,9 @@ class _MainNavigationState extends State<MainNavigation> {
         ],
       ),
       drawer: _buildDrawer(),
-      body: _buildBody(),
+      body: RepaintBoundary(
+        child: _buildBody(),
+      ),
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
@@ -71,83 +82,69 @@ class _MainNavigationState extends State<MainNavigation> {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          DrawerHeader(
-            decoration: BoxDecoration(
+          _buildDrawerHeader(),
+          ...List.generate(_titles.length, (index) => _buildDrawerItem(
+            icon: _getIconForIndex(index),
+            title: _titles[index],
+            isSelected: _selectedIndex == index,
+            onTap: () => _onItemTapped(index),
+          )),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawerHeader() {
+    return DrawerHeader(
+      decoration: const BoxDecoration(
+        color: PerseveranceColors.primary,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const CircleAvatar(
+            radius: 30,
+            backgroundColor: PerseveranceColors.onPrimary,
+            child: Icon(
+              Icons.engineering,
+              size: 30,
               color: PerseveranceColors.primary,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: PerseveranceColors.onPrimary,
-                  child: Icon(
-                    Icons.engineering,
-                    size: 30,
-                    color: PerseveranceColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Team Perseverance',
-                  style: TextStyle(
-                    color: PerseveranceColors.onPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  'VEX Robotics',
-                  style: TextStyle(
-                    color: PerseveranceColors.onPrimary.withOpacity(0.8),
-                    fontSize: 14,
-                  ),
-                ),
-              ],
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Team Perseverance',
+            style: TextStyle(
+              color: PerseveranceColors.onPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          _buildDrawerItem(
-            icon: Icons.home,
-            title: 'Home',
-            isSelected: _selectedIndex == 0,
-            onTap: () => _onItemTapped(0),
-          ),
-          _buildDrawerItem(
-            icon: Icons.people,
-            title: 'Team',
-            isSelected: _selectedIndex == 1,
-            onTap: () => _onItemTapped(1),
-          ),
-          _buildDrawerItem(
-            icon: Icons.build,
-            title: 'Build',
-            isSelected: _selectedIndex == 2,
-            onTap: () => _onItemTapped(2),
-          ),
-          _buildDrawerItem(
-            icon: Icons.sports_esports,
-            title: 'Games',
-            isSelected: _selectedIndex == 3,
-            onTap: () => _onItemTapped(3),
+          Text(
+            'VEX Robotics',
+            style: TextStyle(
+              color: PerseveranceColors.onPrimary.withOpacity(0.8),
+              fontSize: 14,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDrawerHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Text(
-        title,
-        style: TextStyle(
-          color: PerseveranceColors.primary,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.2,
-        ),
-      ),
-    );
+  IconData _getIconForIndex(int index) {
+    switch (index) {
+      case 0:
+        return Icons.home;
+      case 1:
+        return Icons.people;
+      case 2:
+        return Icons.build;
+      case 3:
+        return Icons.sports_esports;
+      default:
+        return Icons.home;
+    }
   }
 
   Widget _buildDrawerItem({
@@ -206,42 +203,16 @@ class _MainNavigationState extends State<MainNavigation> {
           label: 'Games',
         ),
       ],
-      backgroundColor: PerseveranceColors.surfaceContainer,
-      indicatorColor: PerseveranceColors.primary,
-      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-      elevation: 8,
-      shadowColor: Colors.black12,
-      surfaceTintColor: PerseveranceColors.surfaceContainer,
-      indicatorShape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      height: 80,
-      animationDuration: const Duration(milliseconds: 300),
     );
   }
 
   String _getTitle() {
-    switch (_selectedIndex) {
-      case 0:
-        return 'Home';
-      case 1:
-        return 'Team';
-      case 2:
-        return 'Build';
-      case 3:
-        return 'Games';
-      default:
-        return 'Team Perseverance';
-    }
+    return _titles[_selectedIndex];
   }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
-    // Only close drawer if it's open (when navigating from drawer)
-    if (Scaffold.of(context).isDrawerOpen) {
-      Navigator.pop(context);
-    }
   }
 } 

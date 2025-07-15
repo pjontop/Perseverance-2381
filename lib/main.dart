@@ -2,11 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'utils/theme.dart';
-import 'screens/main_navigation.dart';
+import 'screens/startup_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load();
+  
+  // Load environment variables with error handling
+  try {
+    await dotenv.load();
+  } catch (e) {
+    // Continue without .env file for development
+    print('Warning: Could not load .env file: $e');
+    print('Using default configuration values');
+  }
+  
   runApp(
     const ProviderScope(
       child: PerseveranceApp(),
@@ -24,8 +33,15 @@ class PerseveranceApp extends StatelessWidget {
       theme: AppTheme.lightTheme(),
       darkTheme: AppTheme.darkTheme(),
       themeMode: ThemeMode.system,
-      home: const MainNavigation(),
+      home: const StartupScreen(),
       debugShowCheckedModeBanner: false,
+      // Add error handling for widget tree
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
+          child: child!,
+        );
+      },
     );
   }
 }

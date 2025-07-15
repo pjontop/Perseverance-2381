@@ -2,6 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../utils/colors.dart';
 import '../../services/haptic_service.dart';
+import '../../utils/ai_helpers.dart';
+import '../../providers/app_providers.dart';
+
+final resourceUtilizationInsightsProvider = FutureProvider<String>((ref) async {
+  final authState = ref.read(authProvider);
+  final teamId = (authState.valueOrNull?.teamId ?? '');
+  final inventoryAsync = ref.read(teamCollectionProvider('inventory', teamId));
+  List<Map<String, dynamic>> inventory = [];
+  if (inventoryAsync is AsyncData) {
+    inventory = (inventoryAsync.value as List<dynamic>).cast<Map<String, dynamic>>();
+  }
+  final alerts = await AIHelpers.analyzeInventory(inventory, []);
+  if (alerts.isNotEmpty) {
+    return alerts.map((a) => a['message'] ?? '').where((msg) => msg.isNotEmpty).join('\n');
+  }
+  return 'No resource alerts or suggestions.';
+});
 
 class ResourceUtilizationWidget extends ConsumerStatefulWidget {
   const ResourceUtilizationWidget({super.key});
@@ -556,6 +573,7 @@ class _ResourceUtilizationWidgetState extends ConsumerState<ResourceUtilizationW
   }
 
   Widget _buildResourceSummary() {
+    final insightsAsync = ref.watch(resourceUtilizationInsightsProvider);
     return Card(
       color: PerseveranceColors.background,
       child: Padding(
@@ -563,37 +581,35 @@ class _ResourceUtilizationWidgetState extends ConsumerState<ResourceUtilizationW
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Resource Efficiency Summary',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: PerseveranceColors.buttonFill,
-              ),
+            Row(
+              children: [
+                Icon(
+                  Icons.insights,
+                  color: PerseveranceColors.buttonFill,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Insights',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: PerseveranceColors.buttonFill,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildSummaryCard('Parts Efficiency', '87%', Colors.green),
+            insightsAsync.when(
+              data: (insight) => Text(
+                insight,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: PerseveranceColors.secondaryText,
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildSummaryCard('Tool Utilization', '92%', Colors.blue),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildSummaryCard('Budget Efficiency', '74%', Colors.orange),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildSummaryCard('Inventory Turnover', '2.1x', Colors.purple),
-                ),
-              ],
+              ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text('Could not load insights', style: TextStyle(color: Colors.red)),
             ),
           ],
         ),

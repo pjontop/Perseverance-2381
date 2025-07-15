@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Login Screen
 /// 
 /// Handles user authentication with email/password and OAuth options.
+/// 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 

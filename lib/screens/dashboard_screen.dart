@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:appwrite/appwrite.dart';
+import 'package:appwrite/models.dart' as appwrite_models;
 import '../models/event.dart';
 import '../models/task.dart';
 import '../models/build_log.dart';
@@ -7,16 +9,30 @@ import '../widgets/dashboard/upcoming_events_card.dart';
 import '../widgets/dashboard/recent_builds_card.dart';
 import '../widgets/dashboard/tasks_summary_card.dart';
 import '../widgets/dashboard/team_performance_card.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/app_providers.dart';
+import '../providers/app_providers.dart';
+import 'competition_screen.dart';
+import 'build_screen.dart';
+import 'team_screen.dart';
+import 'analytics_screen.dart';
 
 /// Dashboard Screen
 /// 
 /// The main dashboard screen for the VEX Robotics Team Perseverance app.
 /// Shows team overview, quick stats, and recent activities.
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+    final teamId = (authState.valueOrNull?.teamId ?? '');
+    final eventsAsync = ref.watch(teamEventsProvider(teamId));
+    final buildsAsync = ref.watch(teamBuildLogsProvider(teamId));
+    final tasksAsync = ref.watch(teamTasksProvider(teamId));
+    final statsAsync = ref.watch(_teamStatsProvider(teamId));
+
     return Scaffold(
       backgroundColor: PerseveranceColors.background,
       body: SafeArea(
@@ -26,47 +42,65 @@ class DashboardScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 16),
-              
-              // Welcome Header
               _buildWelcomeHeader(context),
               const SizedBox(height: 32),
-              
               // Upcoming Events Card
-              UpcomingEventsCard(
-                events: _getPlaceholderEvents(),
-                onViewAll: () {
-                  // TODO: Navigate to events screen
-                },
+              AsyncValueWidget(
+                value: eventsAsync,
+                builder: (events) => UpcomingEventsCard(
+                  events: events,
+                  onViewAll: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const CompetitionScreen()),
+                    );
+                  },
+                ),
               ),
               const SizedBox(height: 24),
-              
               // Recent Build Progress Card
-              RecentBuildsCard(
-                builds: _getPlaceholderBuilds(),
-                onViewAll: () {
-                  // TODO: Navigate to builds screen
-                },
+              AsyncValueWidget(
+                value: buildsAsync,
+                builder: (builds) => RecentBuildsCard(
+                  builds: builds,
+                  onViewAll: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const BuildScreen()),
+                    );
+                  },
+                ),
               ),
               const SizedBox(height: 24),
-              
               // Active Tasks Summary Card
-              TasksSummaryCard(
-                tasks: _getPlaceholderTasks(),
-                onViewAll: () {
-                  // TODO: Navigate to tasks screen
-                },
+              AsyncValueWidget(
+                value: tasksAsync,
+                builder: (tasks) => TasksSummaryCard(
+                  tasks: tasks,
+                  onViewAll: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const TeamScreen()),
+                    );
+                  },
+                ),
               ),
               const SizedBox(height: 24),
-              
               // Team Performance Quick Stats Card
-              TeamPerformanceCard(
-                wins: 12,
-                losses: 3,
-                averageScore: 85.5,
-                currentRanking: 5,
-                onViewDetails: () {
-                  // TODO: Navigate to performance details
-                },
+              AsyncValueWidget(
+                value: statsAsync,
+                builder: (stats) => TeamPerformanceCard(
+                  wins: stats['wins'],
+                  losses: stats['losses'],
+                  averageScore: stats['averageScore'],
+                  currentRanking: stats['currentRanking'],
+                  onViewDetails: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const AnalyticsScreen()),
+                    );
+                  },
+                ),
               ),
               const SizedBox(height: 24),
             ],
@@ -108,151 +142,48 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  /// Returns placeholder events data
-  List<Event> _getPlaceholderEvents() {
-    final now = DateTime.now();
-    return [
-      Event(
-        id: '1',
-        title: 'VEX State Championship',
-        description: 'State level competition for VEX Robotics',
-        dateTime: now.add(const Duration(days: 2)),
-        location: 'Convention Center, Downtown',
-        type: EventType.competition,
-      ),
-      Event(
-        id: '2',
-        title: 'Team Strategy Meeting',
-        description: 'Weekly team meeting to discuss competition strategy',
-        dateTime: now.add(const Duration(days: 1)),
-        location: 'School Robotics Lab',
-        type: EventType.meeting,
-      ),
-      Event(
-        id: '3',
-        title: 'Robot Testing Session',
-        description: 'Testing and debugging robot systems',
-        dateTime: now.add(const Duration(days: 3)),
-        location: 'School Gymnasium',
-        type: EventType.practice,
-      ),
-      Event(
-        id: '4',
-        title: 'Programming Workshop',
-        description: 'Advanced programming techniques for VEX',
-        dateTime: now.add(const Duration(days: 7)),
-        location: 'Computer Lab',
-        type: EventType.workshop,
-      ),
-    ];
-  }
+  // This method is not used in the current implementation
+  // Team data is loaded through providers instead
+}
 
-  /// Returns placeholder build logs data
-  List<BuildLog> _getPlaceholderBuilds() {
-    final now = DateTime.now();
-    return [
-      BuildLog(
-        id: '1',
-        title: 'Drive Train Assembly',
-        description: 'Completed assembly of the main drive train system',
-        date: now.subtract(const Duration(days: 1)),
-        status: BuildStatus.completed,
-        progress: 1.0,
-        author: 'Mike Rodriguez',
-        tags: ['Mechanical', 'Drive Train'],
-        robotVersion: 'V1',
-      ),
-      BuildLog(
-        id: '2',
-        title: 'Lift Mechanism',
-        description: 'Working on the lift mechanism for game objects',
-        date: now.subtract(const Duration(hours: 6)),
-        status: BuildStatus.inProgress,
-        progress: 0.75,
-        author: 'Sarah Chen',
-        tags: ['Mechanical', 'Lift'],
-        robotVersion: 'V2',
-      ),
-      BuildLog(
-        id: '3',
-        title: 'Autonomous Programming',
-        description: 'Developing autonomous routines for competition',
-        date: now.subtract(const Duration(hours: 2)),
-        status: BuildStatus.testing,
-        progress: 0.6,
-        author: 'Alex Johnson',
-        tags: ['Programming', 'Autonomous'],
-        robotVersion: 'V3',
-      ),
-      BuildLog(
-        id: '4',
-        title: 'Sensor Integration',
-        description: 'Integrating various sensors for better robot control',
-        date: now,
-        status: BuildStatus.inProgress,
-        progress: 0.3,
-        author: 'Emma Wilson',
-        tags: ['Electronics', 'Sensors'],
-        robotVersion: 'V3',
-      ),
-    ];
-  }
+// Providers for each collection with correct types
+final teamEventsProvider = (String teamId) => FutureProvider<List<Event>>((ref) async {
+  final db = ref.watch(databaseServiceProvider);
+  return (await db.listDocuments(collectionId: 'events', queries: [Query.equal('teamId', teamId)])).map<Event>((e) => Event.fromJson(e)).toList();
+});
 
-  /// Returns placeholder tasks data
-  List<Task> _getPlaceholderTasks() {
-    final now = DateTime.now();
-    return [
-      Task(
-        id: '1',
-        title: 'Complete Robot Testing',
-        description: 'Test all robot systems before competition',
-        dueDate: now.add(const Duration(days: 1)),
-        priority: TaskPriority.high,
-        status: TaskStatus.inProgress,
-        assignedTo: 'Mike Rodriguez',
-        category: TaskCategory.build,
-      ),
-      Task(
-        id: '2',
-        title: 'Update Competition Strategy',
-        description: 'Review and update team strategy based on recent matches',
-        dueDate: now.add(const Duration(days: 2)),
-        priority: TaskPriority.medium,
-        status: TaskStatus.notStarted,
-        assignedTo: 'Sarah Chen',
-        category: TaskCategory.documentation,
-      ),
-      Task(
-        id: '3',
-        title: 'Prepare Competition Materials',
-        description: 'Gather all necessary materials for the upcoming competition',
-        dueDate: now.add(const Duration(days: 1)),
-        priority: TaskPriority.high,
-        status: TaskStatus.notStarted,
-        assignedTo: 'Alex Johnson',
-        category: TaskCategory.other,
-      ),
-      Task(
-        id: '4',
-        title: 'Review Match Videos',
-        description: 'Analyze recent match videos for improvement opportunities',
-        dueDate: now.subtract(const Duration(days: 1)),
-        priority: TaskPriority.low,
-        status: TaskStatus.completed,
-        assignedTo: 'Emma Wilson',
-        completedAt: now.subtract(const Duration(hours: 2)),
-        category: TaskCategory.documentation,
-      ),
-      Task(
-        id: '5',
-        title: 'Update Team Website',
-        description: 'Update team website with latest achievements',
-        dueDate: now.subtract(const Duration(days: 2)),
-        priority: TaskPriority.medium,
-        status: TaskStatus.notStarted,
-        assignedTo: 'Alex Johnson',
-        category: TaskCategory.documentation,
-      ),
-    ];
+final teamBuildLogsProvider = (String teamId) => FutureProvider<List<BuildLog>>((ref) async {
+  final db = ref.watch(databaseServiceProvider);
+  return (await db.listDocuments(collectionId: 'buildLogs')).map<BuildLog>((b) => BuildLog.fromJson(b)).toList();
+});
+
+final teamTasksProvider = (String teamId) => FutureProvider<List<Task>>((ref) async {
+  final db = ref.watch(databaseServiceProvider);
+  return (await db.listDocuments(collectionId: 'tasks')).map<Task>((t) => Task.fromJson(t)).toList();
+});
+
+// Helper: Provider for team stats
+final _teamStatsProvider = (String teamId) => FutureProvider<Map<String, dynamic>>((ref) async {
+  // Return mock data for now since getTeamMatches is not implemented
+  return {
+    'wins': 5,
+    'losses': 2,
+    'averageScore': 85,
+    'currentRanking': 3,
+  };
+});
+
+// AsyncValueWidget for loading/error/data
+class AsyncValueWidget<T> extends StatelessWidget {
+  final AsyncValue<T> value;
+  final Widget Function(T data) builder;
+  const AsyncValueWidget({required this.value, required this.builder, super.key});
+  @override
+  Widget build(BuildContext context) {
+    return value.when(
+      data: builder,
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Error: $e')),
+    );
   }
 } 

@@ -1,4 +1,5 @@
 import 'package:appwrite/appwrite.dart';
+import 'dart:async';
 import '../config/appwrite_config.dart';
 
 class DatabaseService {
@@ -16,21 +17,27 @@ class DatabaseService {
     _realtime = Realtime(_client);
   }
 
-  // Generic CRUD operations
+  // Generic CRUD operations with timeout and error handling
   Future<Map<String, dynamic>> createDocument({
     required String collectionId,
     required Map<String, dynamic> data,
     String? documentId,
   }) async {
     try {
-      // Mock implementation
-      final doc = {
-        'id': documentId ?? 'doc_${DateTime.now().millisecondsSinceEpoch}',
-        ...data,
-        'createdAt': DateTime.now().toIso8601String(),
-      };
-      return doc;
+      final doc = await _databases.createDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: collectionId,
+        documentId: documentId ?? ID.unique(),
+        data: data,
+      ).timeout(
+        Duration(seconds: AppwriteConfig.requestTimeout),
+        onTimeout: () => throw TimeoutException('Request timed out'),
+      );
+      return doc.data;
     } catch (e) {
+      if (AppwriteConfig.enableDebugLogs) {
+        print('Failed to create document: $e');
+      }
       throw Exception('Failed to create document: $e');
     }
   }
@@ -40,12 +47,19 @@ class DatabaseService {
     required String documentId,
   }) async {
     try {
-      // Mock implementation
-      return {
-        'id': documentId,
-        'data': 'Mock document data',
-      };
+      final doc = await _databases.getDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: collectionId,
+        documentId: documentId,
+      ).timeout(
+        Duration(seconds: AppwriteConfig.requestTimeout),
+        onTimeout: () => throw TimeoutException('Request timed out'),
+      );
+      return doc.data;
     } catch (e) {
+      if (AppwriteConfig.enableDebugLogs) {
+        print('Failed to get document: $e');
+      }
       throw Exception('Failed to get document: $e');
     }
   }
@@ -53,26 +67,21 @@ class DatabaseService {
   Future<List<Map<String, dynamic>>> listDocuments({
     required String collectionId,
     List<String>? queries,
-    String? orderAttribute,
-    String? orderType,
   }) async {
     try {
-      // Mock implementation
-      return [
-        {
-          'id': 'doc1',
-          'name': 'Mock Document 1',
-          'description': 'This is a mock document',
-          'createdAt': DateTime.now().toIso8601String(),
-        },
-        {
-          'id': 'doc2',
-          'name': 'Mock Document 2',
-          'description': 'This is another mock document',
-          'createdAt': DateTime.now().toIso8601String(),
-        },
-      ];
+      final response = await _databases.listDocuments(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: collectionId,
+        queries: queries,
+      ).timeout(
+        Duration(seconds: AppwriteConfig.requestTimeout),
+        onTimeout: () => throw TimeoutException('Request timed out'),
+      );
+      return response.documents.map((doc) => doc.data).toList();
     } catch (e) {
+      if (AppwriteConfig.enableDebugLogs) {
+        print('Failed to list documents: $e');
+      }
       throw Exception('Failed to list documents: $e');
     }
   }
@@ -83,13 +92,20 @@ class DatabaseService {
     required Map<String, dynamic> data,
   }) async {
     try {
-      // Mock implementation
-      return {
-        'id': documentId,
-        ...data,
-        'updatedAt': DateTime.now().toIso8601String(),
-      };
+      final doc = await _databases.updateDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: collectionId,
+        documentId: documentId,
+        data: data,
+      ).timeout(
+        Duration(seconds: AppwriteConfig.requestTimeout),
+        onTimeout: () => throw TimeoutException('Request timed out'),
+      );
+      return doc.data;
     } catch (e) {
+      if (AppwriteConfig.enableDebugLogs) {
+        print('Failed to update document: $e');
+      }
       throw Exception('Failed to update document: $e');
     }
   }
@@ -99,28 +115,61 @@ class DatabaseService {
     required String documentId,
   }) async {
     try {
-      // Mock implementation
-      print('Mock: Deleted document $documentId from $collectionId');
+      await _databases.deleteDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: collectionId,
+        documentId: documentId,
+      ).timeout(
+        Duration(seconds: AppwriteConfig.requestTimeout),
+        onTimeout: () => throw TimeoutException('Request timed out'),
+      );
     } catch (e) {
+      if (AppwriteConfig.enableDebugLogs) {
+        print('Failed to delete document: $e');
+      }
       throw Exception('Failed to delete document: $e');
     }
   }
 
-  // Real-time subscriptions
+  // Real-time subscriptions with error handling
   Stream<Map<String, dynamic>> subscribeToCollection({
     required String collectionId,
     required Function(Map<String, dynamic>) callback,
   }) {
-    // Mock implementation
-    return Stream.periodic(const Duration(seconds: 5), (i) {
-      final data = {
-        'id': 'mock_${DateTime.now().millisecondsSinceEpoch}',
-        'collectionId': collectionId,
-        'timestamp': DateTime.now().toIso8601String(),
-      };
-      callback(data);
-      return data;
-    });
+    final controller = StreamController<Map<String, dynamic>>();
+    
+    try {
+      final subscription = _realtime.subscribe([
+        'databases.${AppwriteConfig.databaseId}.collections.$collectionId.documents'
+      ]);
+      
+      subscription.stream.listen(
+        (event) {
+          try {
+            final data = event.payload as Map<String, dynamic>;
+            callback(data);
+            controller.add(data);
+          } catch (e) {
+            if (AppwriteConfig.enableDebugLogs) {
+              print('Error processing real-time event: $e');
+            }
+          }
+        },
+        onError: (error) {
+          if (AppwriteConfig.enableDebugLogs) {
+            print('Real-time subscription error: $error');
+          }
+          controller.addError(error);
+        },
+      );
+    } catch (e) {
+      if (AppwriteConfig.enableDebugLogs) {
+        print('Failed to create real-time subscription: $e');
+      }
+      controller.addError(e);
+    }
+    
+    return controller.stream;
   }
 
   Stream<Map<String, dynamic>> subscribeToDocument({
@@ -128,125 +177,153 @@ class DatabaseService {
     required String documentId,
     required Function(Map<String, dynamic>) callback,
   }) {
-    // Mock implementation
-    return Stream.periodic(const Duration(seconds: 3), (i) {
-      final data = {
-        'id': documentId,
-        'collectionId': collectionId,
-        'timestamp': DateTime.now().toIso8601String(),
-      };
-      callback(data);
-      return data;
-    });
+    final controller = StreamController<Map<String, dynamic>>();
+    
+    try {
+      final subscription = _realtime.subscribe([
+        'databases.${AppwriteConfig.databaseId}.collections.$collectionId.documents.$documentId'
+      ]);
+      
+      subscription.stream.listen(
+        (event) {
+          try {
+            final data = event.payload as Map<String, dynamic>;
+            callback(data);
+            controller.add(data);
+          } catch (e) {
+            if (AppwriteConfig.enableDebugLogs) {
+              print('Error processing real-time event: $e');
+            }
+          }
+        },
+        onError: (error) {
+          if (AppwriteConfig.enableDebugLogs) {
+            print('Real-time subscription error: $error');
+          }
+          controller.addError(error);
+        },
+      );
+    } catch (e) {
+      if (AppwriteConfig.enableDebugLogs) {
+        print('Failed to create real-time subscription: $e');
+      }
+      controller.addError(e);
+    }
+    
+    return controller.stream;
   }
 
-  void unsubscribe(Stream subscription) {
-    // Mock implementation
-    print('Mock: Unsubscribed from stream');
+  // Team-specific operations
+  Future<List<Map<String, dynamic>>> getTeams() async {
+    return await listDocuments(
+      collectionId: 'teams',
+      queries: [
+        Query.orderAsc('name'),
+      ],
+    );
   }
 
-  // Team-specific queries
   Future<List<Map<String, dynamic>>> getTeamMembers(String teamId) async {
     return await listDocuments(
       collectionId: 'users',
-      queries: ['teamId.equal($teamId)'],
+      queries: [
+        Query.equal('teamId', teamId),
+        Query.orderAsc('name'),
+      ],
     );
   }
 
   Future<List<Map<String, dynamic>>> getTeamTasks(String teamId) async {
     return await listDocuments(
       collectionId: 'tasks',
-      queries: ['teamId.equal($teamId)'],
-      orderAttribute: 'createdAt',
-      orderType: 'DESC',
+      queries: [
+        Query.equal('teamId', teamId),
+        Query.orderAsc('dueDate'),
+      ],
     );
   }
 
   Future<List<Map<String, dynamic>>> getTeamBuildLogs(String teamId) async {
     return await listDocuments(
-      collectionId: 'buildLogs',
-      queries: ['teamId.equal($teamId)'],
-      orderAttribute: 'createdAt',
-      orderType: 'DESC',
+      collectionId: 'build_logs',
+      queries: [
+        Query.equal('teamId', teamId),
+        Query.orderDesc('createdAt'),
+      ],
     );
   }
 
   Future<List<Map<String, dynamic>>> getTeamInventory(String teamId) async {
     return await listDocuments(
       collectionId: 'inventory',
-      queries: ['teamId.equal($teamId)'],
-      orderAttribute: 'name',
-    );
-  }
-
-  Future<List<Map<String, dynamic>>> getTeamMatches(String teamId) async {
-    return await listDocuments(
-      collectionId: 'matches',
-      queries: ['teamId.equal($teamId)'],
-      orderAttribute: 'matchDate',
-      orderType: 'DESC',
-    );
-  }
-
-  Future<List<Map<String, dynamic>>> getTeamTools(String teamId) async {
-    return await listDocuments(
-      collectionId: 'tools',
-      queries: ['teamId.equal($teamId)'],
-      orderAttribute: 'name',
+      queries: [
+        Query.equal('teamId', teamId),
+        Query.orderAsc('name'),
+      ],
     );
   }
 
   Future<List<Map<String, dynamic>>> getTeamMeetings(String teamId) async {
     return await listDocuments(
       collectionId: 'meetings',
-      queries: ['teamId.equal($teamId)'],
-      orderAttribute: 'scheduledDate',
+      queries: [
+        Query.equal('teamId', teamId),
+        Query.orderAsc('scheduledDate'),
+      ],
     );
   }
 
-  // Search functionality
+  // Search functionality with timeout
   Future<List<Map<String, dynamic>>> searchDocuments({
     required String collectionId,
     required String searchTerm,
     List<String>? searchAttributes,
   }) async {
     try {
-      // Mock implementation
-      return [
-        {
-          'id': 'search_result_1',
-          'name': 'Search Result 1',
-          'description': 'Contains: $searchTerm',
-          'collectionId': collectionId,
-        },
-        {
-          'id': 'search_result_2',
-          'name': 'Search Result 2',
-          'description': 'Also contains: $searchTerm',
-          'collectionId': collectionId,
-        },
+      final queries = [
+        Query.search(searchAttributes?.first ?? 'name', searchTerm),
       ];
+      final response = await _databases.listDocuments(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: collectionId,
+        queries: queries,
+      ).timeout(
+        Duration(seconds: AppwriteConfig.requestTimeout),
+        onTimeout: () => throw TimeoutException('Search request timed out'),
+      );
+      return response.documents.map((doc) => doc.data).toList();
     } catch (e) {
+      if (AppwriteConfig.enableDebugLogs) {
+        print('Failed to search documents: $e');
+      }
       throw Exception('Failed to search documents: $e');
     }
   }
 
-  // Batch operations
+  // Batch operations with progress tracking
   Future<List<Map<String, dynamic>>> batchCreateDocuments({
     required String collectionId,
     required List<Map<String, dynamic>> documents,
   }) async {
     final createdDocuments = <Map<String, dynamic>>[];
     
-    for (final data in documents) {
+    for (int i = 0; i < documents.length; i++) {
       try {
+        final data = documents[i];
         final document = await createDocument(
           collectionId: collectionId,
           data: data,
         );
         createdDocuments.add(document);
+        
+        // Add small delay to prevent overwhelming the server
+        if (i < documents.length - 1) {
+          await Future.delayed(const Duration(milliseconds: 100));
+        }
       } catch (e) {
-        print('Failed to create document: $e');
+        if (AppwriteConfig.enableDebugLogs) {
+          print('Failed to create document in batch: $e');
+        }
       }
     }
     

@@ -74,4 +74,16 @@ class BuildLog {
   bool get isCompleted {
     return status == BuildStatus.completed;
   }
+
+  static BuildLog fromJson(Map<String, dynamic> json) => BuildLog(
+    id: json['\$id'] ?? '',
+    title: json['title'] ?? '',
+    description: json['description'] ?? '',
+    date: DateTime.tryParse(json['date'] ?? '') ?? DateTime.now(),
+    status: json['status'] ?? '',
+    progress: (json['progress'] is int) ? json['progress'] : int.tryParse(json['progress']?.toString() ?? '0') ?? 0,
+    author: json['author'] ?? '',
+    tags: (json['tags'] as List?)?.map((e) => e.toString()).toList() ?? [],
+    robotVersion: json['robotVersion'] ?? '',
+  );
 } 
