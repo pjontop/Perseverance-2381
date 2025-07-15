@@ -180,7 +180,19 @@ class WelcomeScreen extends StatelessWidget {
                 children: [
                   TextButton(
                     onPressed: () {
-                      // TODO: Show Terms of Service
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: Text('Terms of Service'),
+                          content: Text('Terms of Service content goes here.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: Text('Close'),
+                            ),
+                          ],
+                        ),
+                      );
                     },
                     child: Text(
                       'Terms',
@@ -199,7 +211,19 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                   TextButton(
                     onPressed: () {
-                      // TODO: Show Privacy Policy
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: Text('Privacy Policy'),
+                          content: Text('Privacy Policy content goes here.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: Text('Close'),
+                            ),
+                          ],
+                        ),
+                      );
                     },
                     child: Text(
                       'Privacy',

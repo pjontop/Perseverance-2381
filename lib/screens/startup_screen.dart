@@ -28,9 +28,6 @@ class _StartupScreenState extends ConsumerState<StartupScreen> {
         _status = 'Loading configuration...';
       });
 
-      // Simulate loading time for better UX
-      await Future.delayed(const Duration(milliseconds: 500));
-
       setState(() {
         _status = 'Checking services...';
       });
@@ -38,15 +35,11 @@ class _StartupScreenState extends ConsumerState<StartupScreen> {
       // Get configuration status
       _configStatus = AppwriteConfig.configSummary;
 
-      await Future.delayed(const Duration(milliseconds: 500));
-
       setState(() {
         _status = 'Ready!';
         _isLoading = false;
       });
 
-      // Navigate to main app after a short delay
-      await Future.delayed(const Duration(milliseconds: 500));
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const MainNavigation()),
