@@ -155,6 +155,8 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
                   onPressed: _isMatchRunning ? _pauseMatch : _startMatch,
                   icon: Icon(_isMatchRunning ? Icons.pause : Icons.play_arrow),
                   label: Text(_isMatchRunning ? 'Pause' : 'Start'),
+                  tooltip: _isMatchRunning ? 'Pause match' : 'Start match',
+                  semanticsLabel: _isMatchRunning ? 'Pause match' : 'Start match',
                   style: PerseveranceButton.styleFrom(
                     backgroundColor: _isMatchRunning ? Colors.orange : Colors.green,
                     foregroundColor: Colors.white,
@@ -164,6 +166,8 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
                   onPressed: _resetMatch,
                   icon: const Icon(Icons.refresh),
                   label: const Text('Reset'),
+                  tooltip: 'Reset match timer',
+                  semanticsLabel: 'Reset match timer',
                   style: PerseveranceButton.styleFrom(
                     backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
