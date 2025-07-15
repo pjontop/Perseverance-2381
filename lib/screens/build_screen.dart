@@ -131,7 +131,12 @@ class _BuildScreenState extends ConsumerState<BuildScreen> with TickerProviderSt
                 }
               },
             ),
-          ) : null,
+          );
+        },
+        child: const Icon(Icons.add),
+        tooltip: 'Add inventory item',
+        semanticsLabel: 'Add inventory item',
+      ) : null,
     );
   }
 
