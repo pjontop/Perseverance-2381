@@ -7,6 +7,7 @@ import '../models/appwrite/match_model.dart';
 import '../widgets/scout/live_match_widget.dart';
 import '../widgets/scout/team_database_widget.dart';
 import '../widgets/scout/alliance_recommendations_widget.dart';
+import '../widgets/custom_button.dart';
 
 class ScoutScreen extends StatefulWidget {
   const ScoutScreen({super.key});
@@ -150,20 +151,24 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                ElevatedButton.icon(
+                PerseveranceButton(
                   onPressed: _isMatchRunning ? _pauseMatch : _startMatch,
                   icon: Icon(_isMatchRunning ? Icons.pause : Icons.play_arrow),
                   label: Text(_isMatchRunning ? 'Pause' : 'Start'),
-                  style: ElevatedButton.styleFrom(
+                  tooltip: _isMatchRunning ? 'Pause match' : 'Start match',
+                  semanticsLabel: _isMatchRunning ? 'Pause match' : 'Start match',
+                  style: PerseveranceButton.styleFrom(
                     backgroundColor: _isMatchRunning ? Colors.orange : Colors.green,
                     foregroundColor: Colors.white,
                   ),
                 ),
-                ElevatedButton.icon(
+                PerseveranceButton(
                   onPressed: _resetMatch,
                   icon: const Icon(Icons.refresh),
                   label: const Text('Reset'),
-                  style: ElevatedButton.styleFrom(
+                  tooltip: 'Reset match timer',
+                  semanticsLabel: 'Reset match timer',
+                  style: PerseveranceButton.styleFrom(
                     backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
                   ),
@@ -193,36 +198,46 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(
-                  child: RadioListTile<AllianceColor>(
-                    title: Text(
+                Flexible(
+                  child: PerseveranceButton(
+                    onPressed: () {
+                      setState(() {
+                        _allianceColor = AllianceColor.red;
+                      });
+                    },
+                    icon: Icon(Icons.circle, color: Colors.red),
+                    label: Text(
                       'Red Alliance',
                       style: TextStyle(color: Colors.red),
                     ),
-                    value: AllianceColor.red,
-                    groupValue: _allianceColor,
-                    onChanged: (value) {
-                      setState(() {
-                        _allianceColor = value!;
-                      });
-                    },
-                    activeColor: PerseveranceColors.buttonFill,
+                    tooltip: 'Select Red Alliance',
+                    semanticsLabel: 'Select Red Alliance',
+                    style: PerseveranceButton.styleFrom(
+                      backgroundColor: _allianceColor == AllianceColor.red ? PerseveranceColors.buttonFill : null,
+                      foregroundColor: _allianceColor == AllianceColor.red ? PerseveranceColors.primaryButtonText : null,
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
                   ),
                 ),
-                Expanded(
-                  child: RadioListTile<AllianceColor>(
-                    title: Text(
+                Flexible(
+                  child: PerseveranceButton(
+                    onPressed: () {
+                      setState(() {
+                        _allianceColor = AllianceColor.blue;
+                      });
+                    },
+                    icon: Icon(Icons.circle, color: Colors.blue),
+                    label: Text(
                       'Blue Alliance',
                       style: TextStyle(color: Colors.blue),
                     ),
-                    value: AllianceColor.blue,
-                    groupValue: _allianceColor,
-                    onChanged: (value) {
-                      setState(() {
-                        _allianceColor = value!;
-                      });
-                    },
-                    activeColor: PerseveranceColors.buttonFill,
+                    tooltip: 'Select Blue Alliance',
+                    semanticsLabel: 'Select Blue Alliance',
+                    style: PerseveranceButton.styleFrom(
+                      backgroundColor: _allianceColor == AllianceColor.blue ? PerseveranceColors.buttonFill : null,
+                      foregroundColor: _allianceColor == AllianceColor.blue ? PerseveranceColors.primaryButtonText : null,
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
                   ),
                 ),
               ],
@@ -301,11 +316,11 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
             const SizedBox(height: 16),
             Row(
               children: [
-                Expanded(
+                Flexible(
                   child: _buildScoreCard('Goals Scored', 'goals', 0, 10),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
+                Flexible(
                   child: _buildScoreCard('Rings Collected', 'rings', 0, 20),
                 ),
               ],
@@ -313,11 +328,11 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(
+                Flexible(
                   child: _buildScoreCard('Climbs', 'climbs', 0, 5),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
+                Flexible(
                   child: _buildScoreCard('Parks', 'parks', 0, 3),
                 ),
               ],
@@ -369,15 +384,29 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              IconButton(
+              PerseveranceButton(
                 onPressed: () => _updateScore(key, -1, min),
-                icon: const Icon(Icons.remove_circle_outline),
-                color: PerseveranceColors.secondaryText,
+                icon: Icon(Icons.remove_circle_outline, size: 20),
+                label: Text('Decrease'),
+                tooltip: 'Decrease $title',
+                semanticsLabel: 'Decrease $title',
+                style: PerseveranceButton.styleFrom(
+                  backgroundColor: PerseveranceColors.secondaryText,
+                  foregroundColor: PerseveranceColors.primaryButtonText,
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
               ),
-              IconButton(
+              PerseveranceButton(
                 onPressed: () => _updateScore(key, 1, max),
-                icon: const Icon(Icons.add_circle_outline),
-                color: PerseveranceColors.buttonFill,
+                icon: Icon(Icons.add_circle_outline, size: 20),
+                label: Text('Increase'),
+                tooltip: 'Increase $title',
+                semanticsLabel: 'Increase $title',
+                style: PerseveranceButton.styleFrom(
+                  backgroundColor: PerseveranceColors.buttonFill,
+                  foregroundColor: PerseveranceColors.primaryButtonText,
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
               ),
             ],
           ),
@@ -405,30 +434,94 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
               spacing: 8,
               runSpacing: 8,
               children: [
-                _buildQuickActionButton('Climb', Icons.trending_up, () => _quickAction('climb')),
-                _buildQuickActionButton('Park', Icons.local_parking, () => _quickAction('park')),
-                _buildQuickActionButton('Score', Icons.sports_soccer, () => _quickAction('score')),
-                _buildQuickActionButton('Foul', Icons.warning, () => _quickAction('foul')),
-                _buildQuickActionButton('Technical', Icons.build, () => _quickAction('technical')),
-                _buildQuickActionButton('Yellow Card', Icons.warning_amber, () => _quickAction('yellow')),
-                _buildQuickActionButton('Red Card', Icons.block, () => _quickAction('red')),
+                PerseveranceButton(
+                  onPressed: () => _quickAction('climb'),
+                  icon: Icon(Icons.trending_up, size: 16),
+                  label: Text('Climb'),
+                  tooltip: 'Mark climb',
+                  semanticsLabel: 'Mark climb',
+                  style: PerseveranceButton.styleFrom(
+                    backgroundColor: PerseveranceColors.buttonFill,
+                    foregroundColor: PerseveranceColors.primaryButtonText,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+                PerseveranceButton(
+                  onPressed: () => _quickAction('park'),
+                  icon: Icon(Icons.local_parking, size: 16),
+                  label: Text('Park'),
+                  tooltip: 'Mark park',
+                  semanticsLabel: 'Mark park',
+                  style: PerseveranceButton.styleFrom(
+                    backgroundColor: PerseveranceColors.buttonFill,
+                    foregroundColor: PerseveranceColors.primaryButtonText,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+                PerseveranceButton(
+                  onPressed: () => _quickAction('score'),
+                  icon: Icon(Icons.sports_soccer, size: 16),
+                  label: Text('Score'),
+                  tooltip: 'Mark score',
+                  semanticsLabel: 'Mark score',
+                  style: PerseveranceButton.styleFrom(
+                    backgroundColor: PerseveranceColors.buttonFill,
+                    foregroundColor: PerseveranceColors.primaryButtonText,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+                PerseveranceButton(
+                  onPressed: () => _quickAction('foul'),
+                  icon: Icon(Icons.warning, size: 16),
+                  label: Text('Foul'),
+                  tooltip: 'Mark foul',
+                  semanticsLabel: 'Mark foul',
+                  style: PerseveranceButton.styleFrom(
+                    backgroundColor: PerseveranceColors.buttonFill,
+                    foregroundColor: PerseveranceColors.primaryButtonText,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+                PerseveranceButton(
+                  onPressed: () => _quickAction('technical'),
+                  icon: Icon(Icons.build, size: 16),
+                  label: Text('Technical'),
+                  tooltip: 'Mark technical',
+                  semanticsLabel: 'Mark technical',
+                  style: PerseveranceButton.styleFrom(
+                    backgroundColor: PerseveranceColors.buttonFill,
+                    foregroundColor: PerseveranceColors.primaryButtonText,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+                PerseveranceButton(
+                  onPressed: () => _quickAction('yellow'),
+                  icon: Icon(Icons.warning_amber, size: 16),
+                  label: Text('Yellow Card'),
+                  tooltip: 'Mark yellow card',
+                  semanticsLabel: 'Mark yellow card',
+                  style: PerseveranceButton.styleFrom(
+                    backgroundColor: PerseveranceColors.buttonFill,
+                    foregroundColor: PerseveranceColors.primaryButtonText,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+                PerseveranceButton(
+                  onPressed: () => _quickAction('red'),
+                  icon: Icon(Icons.block, size: 16),
+                  label: Text('Red Card'),
+                  tooltip: 'Mark red card',
+                  semanticsLabel: 'Mark red card',
+                  style: PerseveranceButton.styleFrom(
+                    backgroundColor: PerseveranceColors.buttonFill,
+                    foregroundColor: PerseveranceColors.primaryButtonText,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
               ],
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildQuickActionButton(String label, IconData icon, VoidCallback onPressed) {
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 16),
-      label: Text(label),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: PerseveranceColors.buttonFill,
-        foregroundColor: PerseveranceColors.primaryButtonText,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
     );
   }
@@ -466,86 +559,81 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
   }
 
   Widget _buildTeamDatabaseTab() {
-    final teams = _getPlaceholderTeams();
-    final filteredTeams = teams.where((team) {
-      if (_searchQuery.isEmpty && _selectedRegion == null) return true;
-      
-      bool matchesSearch = _searchQuery.isEmpty || 
-          team['name'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          team['teamNumber'].toLowerCase().contains(_searchQuery.toLowerCase());
-      
-      bool matchesRegion = _selectedRegion == null || team['region'] == _selectedRegion!.name;
-      
-      return matchesSearch && matchesRegion;
-    }).toList();
-
-    return Column(
-      children: [
-        // Search and filter
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              TextField(
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
-                decoration: InputDecoration(
-                  hintText: 'Search teams by name or number...',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+    final teamsAsync = ref.watch(teamsProvider);
+    return AsyncValueWidget(
+      value: teamsAsync,
+      builder: (teams) => Column(
+        children: [
+          // Search and filter
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                TextField(
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Search teams by name or number...',
+                    prefixIcon: Icon(Icons.search, size: 20),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: PerseveranceColors.background.withOpacity(0.1),
                   ),
-                  filled: true,
-                  fillColor: PerseveranceColors.background.withOpacity(0.1),
                 ),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<TeamRegion>(
-                value: _selectedRegion,
-                decoration: const InputDecoration(
-                  labelText: 'Filter by Region',
-                  border: OutlineInputBorder(),
-                ),
-                items: [
-                  const DropdownMenuItem<TeamRegion>(
-                    value: null,
-                    child: Text('All Regions'),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<TeamRegion>(
+                  value: _selectedRegion,
+                  decoration: InputDecoration(
+                    labelText: 'Filter by Region',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                  ...TeamRegion.values.map((region) => DropdownMenuItem(
-                    value: region,
-                    child: Text(region.displayName),
-                  )),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedRegion = value;
-                  });
-                },
-              ),
-            ],
+                  items: [
+                    DropdownMenuItem(
+                      value: null,
+                      child: Text('All Regions'),
+                      enabled: false,
+                    ),
+                    ...TeamRegion.values.map((region) => DropdownMenuItem(
+                      value: region,
+                      child: Text(region.displayName),
+                    )),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedRegion = value;
+                    });
+                  },
+                  focusNode: FocusNode(),
+                ),
+              ],
+            ),
           ),
-        ),
-        
-        // Teams list
-        Expanded(
-          child: ListView.builder(
-            itemCount: filteredTeams.length,
-            itemBuilder: (context, index) {
-              final team = filteredTeams[index];
-              return _buildTeamCard(team);
-            },
+          
+          // Teams list
+          Expanded(
+            child: ListView.builder(
+              itemCount: teams.length,
+              itemBuilder: (context, index) {
+                final team = teams[index];
+                return _buildTeamCard(team);
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildTeamCard(Map<String, dynamic> team) {
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: PerseveranceColors.buttonFill,
@@ -582,10 +670,16 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
               ),
           ],
         ),
-        trailing: IconButton(
+        trailing: PerseveranceButton(
           onPressed: () => _viewTeamDetails(team),
-          icon: const Icon(Icons.arrow_forward_ios),
-          color: PerseveranceColors.secondaryText,
+          icon: Icon(Icons.arrow_forward_ios, size: 16),
+          label: Text('View Details'),
+          tooltip: 'View details for Team ${team['teamNumber']}',
+          semanticsLabel: 'View details for Team ${team['teamNumber']}',
+          style: PerseveranceButton.styleFrom(
+            foregroundColor: PerseveranceColors.secondaryText,
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          ),
         ),
         onTap: () => _viewTeamDetails(team),
       ),
@@ -896,9 +990,11 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
           ],
         ),
         actions: [
-          TextButton(
+          PerseveranceButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('Close'),
+            label: Text('Close'),
+            tooltip: 'Close team details dialog',
+            semanticsLabel: 'Close team details dialog',
           ),
         ],
       ),
@@ -909,88 +1005,5 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
     if (compatibility >= 80) return Colors.green;
     if (compatibility >= 60) return Colors.orange;
     return Colors.red;
-  }
-
-  // Placeholder data methods
-  List<Map<String, dynamic>> _getPlaceholderTeams() {
-    return [
-      {
-        'id': '1',
-        'teamNumber': '1234',
-        'name': 'RoboRams',
-        'region': 'northAmerica',
-        'school': 'Lincoln High School',
-        'avgScore': '85.5',
-        'winRate': '78%',
-        'strengths': ['Strong autonomous', 'Good driver control', 'Reliable robot'],
-        'weaknesses': ['Slow endgame', 'Limited climb ability'],
-      },
-      {
-        'id': '2',
-        'teamNumber': '5678',
-        'name': 'Tech Titans',
-        'region': 'northAmerica',
-        'school': 'Washington Tech',
-        'avgScore': '92.3',
-        'winRate': '85%',
-        'strengths': ['Excellent scoring', 'Fast robot', 'Good strategy'],
-        'weaknesses': ['Sometimes unreliable', 'Complex mechanisms'],
-      },
-      {
-        'id': '3',
-        'teamNumber': '9012',
-        'name': 'CyberCats',
-        'region': 'europe',
-        'school': 'European Academy',
-        'avgScore': '78.9',
-        'winRate': '72%',
-        'strengths': ['Consistent performance', 'Good teamwork'],
-        'weaknesses': ['Limited scoring capacity', 'Slow autonomous'],
-      },
-      {
-        'id': '4',
-        'teamNumber': '3456',
-        'name': 'Asian Dragons',
-        'region': 'asia',
-        'school': 'Tokyo Robotics',
-        'avgScore': '88.7',
-        'winRate': '81%',
-        'strengths': ['Innovative design', 'High scoring potential'],
-        'weaknesses': ['Complex maintenance', 'Unreliable in pressure'],
-      },
-    ];
-  }
-
-  List<Map<String, dynamic>> _getAllianceRecommendations() {
-    return [
-      {
-        'teamNumber': '5678',
-        'name': 'Tech Titans',
-        'compatibility': 92,
-        'score': 'A+',
-        'reasoning': 'Excellent scoring capability complements our defensive strategy. Strong autonomous and driver control.',
-      },
-      {
-        'teamNumber': '1234',
-        'name': 'RoboRams',
-        'compatibility': 85,
-        'score': 'A',
-        'reasoning': 'Reliable robot with good autonomous. Good for consistent performance.',
-      },
-      {
-        'teamNumber': '9012',
-        'name': 'CyberCats',
-        'compatibility': 78,
-        'score': 'B+',
-        'reasoning': 'Consistent but limited scoring. Good backup option.',
-      },
-      {
-        'teamNumber': '3456',
-        'name': 'Asian Dragons',
-        'compatibility': 65,
-        'score': 'B',
-        'reasoning': 'High potential but unreliable under pressure. Risky choice.',
-      },
-    ];
   }
 } 

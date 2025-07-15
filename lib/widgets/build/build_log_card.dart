@@ -80,6 +80,8 @@ class BuildLogCard extends StatelessWidget {
                       onPressed: onEdit,
                       icon: const Icon(Icons.edit, size: 20),
                       color: PerseveranceColors.secondaryText,
+                      tooltip: 'Edit Build Log',
+                      semanticsLabel: 'Edit Build Log',
                     ),
                 ],
               ),

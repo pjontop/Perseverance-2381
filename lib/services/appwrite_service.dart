@@ -1,14 +1,7 @@
 import 'package:appwrite/appwrite.dart';
+import '../config/appwrite_config.dart';
 
 class AppwriteService {
-  static const String _endpoint = 'https://cloud.appwrite.io/v1';
-  static const String _projectId = 'your-project-id';
-  static const String _databaseId = 'your-database-id';
-  static const String _teamsCollection = 'teams';
-  static const String _matchesCollection = 'matches';
-  static const String _scoutReportsCollection = 'scout_reports';
-  static const String _usersCollection = 'users';
-
   late final Client _client;
   late final Account _account;
   late final Databases _databases;
@@ -17,30 +10,21 @@ class AppwriteService {
 
   AppwriteService() {
     _client = Client()
-      ..setEndpoint(_endpoint)
-      ..setProject(_projectId);
-
+      ..setEndpoint(AppwriteConfig.endpoint)
+      ..setProject(AppwriteConfig.projectId);
     _account = Account(_client);
     _databases = Databases(_client);
     _storage = Storage(_client);
     _realtime = Realtime(_client);
   }
 
-
-
   // Authentication
-  Future<Map<String, dynamic>> login({
+  Future<Session> login({
     required String email,
     required String password,
   }) async {
     try {
-      // Simulate login for now
-      await Future.delayed(const Duration(seconds: 1));
-      return {
-        'sessionId': 'session_123',
-        'userId': 'user_123',
-        'expire': DateTime.now().add(const Duration(days: 30)).toIso8601String(),
-      };
+      return await _account.createEmailPasswordSession(email: email, password: password);
     } catch (e) {
       throw Exception('Login failed: $e');
     }
@@ -48,157 +32,105 @@ class AppwriteService {
 
   Future<void> logout() async {
     try {
-      // Simulate logout for now
-      await Future.delayed(const Duration(seconds: 1));
+      await _account.deleteSession(sessionId: 'current');
     } catch (e) {
       throw Exception('Logout failed: $e');
     }
   }
 
-  Future<Map<String, dynamic>?> getCurrentUser() async {
+  Future<Account> getCurrentUser() async {
     try {
-      // Simulate getting current user
-      await Future.delayed(const Duration(milliseconds: 500));
-      return {
-        'id': 'user_123',
-        'email': 'user@perseverance.com',
-        'name': 'Team Member',
-        'role': 'member',
-        'teamId': 'team_456',
-        'createdAt': DateTime.now().subtract(const Duration(days: 30)).toIso8601String(),
-        'updatedAt': DateTime.now().toIso8601String(),
-      };
+      return await _account.get();
     } catch (e) {
-      return null;
+      throw Exception('Get current user failed: $e');
     }
   }
 
   // Database Operations - Teams
   Future<List<Map<String, dynamic>>> getTeams({String? search}) async {
     try {
-      // Simulate team data
-      await Future.delayed(const Duration(seconds: 1));
-      return [
-        {
-          'id': 'team_1',
-          'teamNumber': '1234A',
-          'name': 'Team Alpha',
-          'region': 'North',
-          'school': 'Alpha High School',
-          'city': 'Alpha City',
-          'state': 'CA',
-          'country': 'USA',
-          'performanceMetrics': {
-            'averageScore': 85,
-            'winRate': 0.75,
-            'matchesPlayed': 12,
-            'highestScore': 120,
-          },
-          'strengths': ['Autonomous', 'Driver Skills', 'Strategy'],
-          'weaknesses': ['Endgame', 'Alliance Coordination'],
-        },
-        {
-          'id': 'team_2',
-          'teamNumber': '5678B',
-          'name': 'Team Beta',
-          'region': 'South',
-          'school': 'Beta Academy',
-          'city': 'Beta Town',
-          'state': 'TX',
-          'country': 'USA',
-          'performanceMetrics': {
-            'averageScore': 92,
-            'winRate': 0.85,
-            'matchesPlayed': 15,
-            'highestScore': 135,
-          },
-          'strengths': ['Endgame', 'Alliance Coordination', 'Strategy'],
-          'weaknesses': ['Autonomous'],
-        },
-      ];
+      final response = await _databases.listDocuments(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: 'teams',
+        queries: search != null ? [Query.search('name', search)] : null,
+      );
+      return response.documents.map((doc) => doc.data).toList();
     } catch (e) {
-      throw Exception("Operation failed: $e");
+      throw Exception('Get teams failed: $e');
     }
   }
 
   Future<Map<String, dynamic>> createTeam(Map<String, dynamic> teamData) async {
     try {
-      // Simulate creating team
-      await Future.delayed(const Duration(seconds: 1));
-      return {
-        'id': 'team_${DateTime.now().millisecondsSinceEpoch}',
-        ...teamData,
-      };
+      final doc = await _databases.createDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: 'teams',
+        documentId: ID.unique(),
+        data: teamData,
+      );
+      return doc.data;
     } catch (e) {
-      throw Exception("Operation failed: $e");
+      throw Exception('Create team failed: $e');
     }
   }
 
   Future<Map<String, dynamic>> updateTeam(String teamId, Map<String, dynamic> teamData) async {
     try {
-      // Simulate updating team
-      await Future.delayed(const Duration(seconds: 1));
-      return {
-        'id': teamId,
-        ...teamData,
-      };
+      final doc = await _databases.updateDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: 'teams',
+        documentId: teamId,
+        data: teamData,
+      );
+      return doc.data;
     } catch (e) {
-      throw Exception("Operation failed: $e");
+      throw Exception('Update team failed: $e');
     }
   }
 
   // Database Operations - Matches
   Future<List<Map<String, dynamic>>> getMatches({String? eventId}) async {
     try {
-      // Simulate match data
-      await Future.delayed(const Duration(seconds: 1));
-      return [
-        {
-          'id': 'match_1',
-          'matchNumber': 'Q1',
-          'eventId': eventId ?? 'event_1',
-          'allianceColor': 'red',
-          'teamIds': ['team_1', 'team_2'],
-          'scores': {'red': 85, 'blue': 72},
-          'autonomousData': {'red': 15, 'blue': 12},
-          'driverControlledData': {'red': 60, 'blue': 50},
-          'endgameData': {'red': 10, 'blue': 10},
-          'currentPhase': 'autonomous',
-          'startTime': DateTime.now().subtract(const Duration(minutes: 5)).toIso8601String(),
-          'endTime': null,
-          'notes': 'Good match',
-          'scoutId': 'scout_1',
-          'isLive': true,
-        },
-      ];
+      final queries = <String>[];
+      if (eventId != null) {
+        queries.add(Query.equal('eventId', eventId));
+      }
+      final response = await _databases.listDocuments(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: 'matches',
+        queries: queries.isNotEmpty ? queries : null,
+      );
+      return response.documents.map((doc) => doc.data).toList();
     } catch (e) {
-      throw Exception("Operation failed: $e");
+      throw Exception('Get matches failed: $e');
     }
   }
 
   Future<Map<String, dynamic>> createMatch(Map<String, dynamic> matchData) async {
     try {
-      // Simulate creating match
-      await Future.delayed(const Duration(seconds: 1));
-      return {
-        'id': 'match_${DateTime.now().millisecondsSinceEpoch}',
-        ...matchData,
-      };
+      final doc = await _databases.createDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: 'matches',
+        documentId: ID.unique(),
+        data: matchData,
+      );
+      return doc.data;
     } catch (e) {
-      throw Exception("Operation failed: $e");
+      throw Exception('Create match failed: $e');
     }
   }
 
   Future<Map<String, dynamic>> updateMatch(String matchId, Map<String, dynamic> matchData) async {
     try {
-      // Simulate updating match
-      await Future.delayed(const Duration(seconds: 1));
-      return {
-        'id': matchId,
-        ...matchData,
-      };
+      final doc = await _databases.updateDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: 'matches',
+        documentId: matchId,
+        data: matchData,
+      );
+      return doc.data;
     } catch (e) {
-      throw Exception("Operation failed: $e");
+      throw Exception('Update match failed: $e');
     }
   }
 
@@ -208,106 +140,90 @@ class AppwriteService {
     String? matchId,
   }) async {
     try {
-      // Simulate scout report data
-      await Future.delayed(const Duration(seconds: 1));
-      return [
-        {
-          'id': 'report_1',
-          'teamId': teamId ?? 'team_1',
-          'matchId': matchId ?? 'match_1',
-          'type': 'live',
-          'scoutId': 'scout_1',
-          'autonomousData': {'score': 15, 'triballs': 3, 'mobility': true},
-          'driverControlledData': {'score': 60, 'goals': 8, 'poles': 2},
-          'endgameData': {'score': 10, 'climb': true, 'park': false},
-          'scores': {'total': 85, 'autonomous': 15, 'driver': 60, 'endgame': 10},
-          'strengths': ['Good autonomous', 'Strong driver skills'],
-          'weaknesses': ['Endgame coordination', 'Alliance communication'],
-          'notes': 'Team performed well in autonomous and driver controlled phases',
-          'photoUrls': [],
-          'additionalData': {},
-          'createdAt': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
-          'updatedAt': DateTime.now().toIso8601String(),
-        },
-      ];
+      final queries = <String>[];
+      if (teamId != null) queries.add(Query.equal('teamId', teamId));
+      if (matchId != null) queries.add(Query.equal('matchId', matchId));
+      final response = await _databases.listDocuments(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: 'scout_reports',
+        queries: queries.isNotEmpty ? queries : null,
+      );
+      return response.documents.map((doc) => doc.data).toList();
     } catch (e) {
-      throw Exception("Operation failed: $e");
+      throw Exception('Get scout reports failed: $e');
     }
   }
 
   Future<Map<String, dynamic>> createScoutReport(Map<String, dynamic> reportData) async {
     try {
-      // Simulate creating scout report
-      await Future.delayed(const Duration(seconds: 1));
-      return {
-        'id': 'report_${DateTime.now().millisecondsSinceEpoch}',
-        ...reportData,
-      };
+      final doc = await _databases.createDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: 'scout_reports',
+        documentId: ID.unique(),
+        data: reportData,
+      );
+      return doc.data;
     } catch (e) {
-      throw Exception("Operation failed: $e");
+      throw Exception('Create scout report failed: $e');
     }
   }
 
   // File Storage
   Future<String> uploadFile(String filePath, String bucketId) async {
     try {
-      // Simulate file upload
-      await Future.delayed(const Duration(seconds: 2));
-      return 'https://example.com/files/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final file = await _storage.createFile(
+        bucketId: bucketId,
+        fileId: ID.unique(),
+        file: InputFile.fromPath(path: filePath),
+      );
+      return file.$id;
     } catch (e) {
-      throw Exception("Operation failed: $e");
+      throw Exception('Upload file failed: $e');
     }
   }
 
   Future<void> deleteFile(String fileId, String bucketId) async {
     try {
-      // Simulate file deletion
-      await Future.delayed(const Duration(seconds: 1));
+      await _storage.deleteFile(
+        bucketId: bucketId,
+        fileId: fileId,
+      );
     } catch (e) {
-      throw Exception("Operation failed: $e");
+      throw Exception('Delete file failed: $e');
     }
   }
 
   // Real-time subscriptions
-  Stream<Map<String, dynamic>> subscribeToTeams() {
-    // Simulate real-time updates
-    return Stream.periodic(
-      const Duration(seconds: 5),
-      (i) => {
-        'type': 'update',
-        'collection': 'teams',
-        'data': {'id': 'team_$i', 'updatedAt': DateTime.now().toIso8601String()},
-      },
-    );
+  RealtimeSubscription subscribeToTeams(Function(Map<String, dynamic>) onUpdate) {
+    final subscription = _realtime.subscribe([
+      'databases.${AppwriteConfig.databaseId}.collections.teams.documents'
+    ]);
+    subscription.stream.listen((event) {
+      onUpdate(event.payload as Map<String, dynamic>);
+    });
+    return subscription;
   }
 
-  Stream<Map<String, dynamic>> subscribeToMatches() {
-    // Simulate real-time updates
-    return Stream.periodic(
-      const Duration(seconds: 3),
-      (i) => {
-        'type': 'update',
-        'collection': 'matches',
-        'data': {'id': 'match_$i', 'updatedAt': DateTime.now().toIso8601String()},
-      },
-    );
+  RealtimeSubscription subscribeToMatches(Function(Map<String, dynamic>) onUpdate) {
+    final subscription = _realtime.subscribe([
+      'databases.${AppwriteConfig.databaseId}.collections.matches.documents'
+    ]);
+    subscription.stream.listen((event) {
+      onUpdate(event.payload as Map<String, dynamic>);
+    });
+    return subscription;
   }
 
-  void unsubscribe(dynamic subscription) {
-    // Simulate unsubscribing
-    // In real implementation, this would close the subscription
+  void unsubscribe(RealtimeSubscription subscription) {
+    subscription.close();
   }
 
   // Functions
   Future<Map<String, dynamic>> callFunction(String functionId, Map<String, dynamic> data) async {
     try {
-      // Simulate function call
-      await Future.delayed(const Duration(seconds: 2));
-      return {
-        'success': true,
-        'result': 'Function executed successfully',
-        'data': data,
-      };
+      // This assumes you have Appwrite Functions set up
+      // You may need to use the Functions API if available
+      throw UnimplementedError('Appwrite Functions integration not implemented.');
     } catch (e) {
       throw Exception('Function call failed: $e');
     }

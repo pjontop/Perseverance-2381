@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/colors.dart';
 import '../config/appwrite_config.dart';
 import 'main_navigation.dart';
+import '../widgets/custom_button.dart';
 
 class StartupScreen extends ConsumerStatefulWidget {
   const StartupScreen({super.key});
@@ -28,9 +29,6 @@ class _StartupScreenState extends ConsumerState<StartupScreen> {
         _status = 'Loading configuration...';
       });
 
-      // Simulate loading time for better UX
-      await Future.delayed(const Duration(milliseconds: 500));
-
       setState(() {
         _status = 'Checking services...';
       });
@@ -38,15 +36,11 @@ class _StartupScreenState extends ConsumerState<StartupScreen> {
       // Get configuration status
       _configStatus = AppwriteConfig.configSummary;
 
-      await Future.delayed(const Duration(milliseconds: 500));
-
       setState(() {
         _status = 'Ready!';
         _isLoading = false;
       });
 
-      // Navigate to main app after a short delay
-      await Future.delayed(const Duration(milliseconds: 500));
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const MainNavigation()),

@@ -13,6 +13,7 @@ import '../models/user.dart' as app_user;
 import '../models/competition/task_model.dart' as comp_task;
 import '../models/task.dart' as local_task;
 import '../widgets/team/add_meeting_dialog.dart';
+import '../widgets/custom_button.dart';
 
 class TeamScreen extends ConsumerStatefulWidget {
   const TeamScreen({super.key});
@@ -56,21 +57,31 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          FloatingActionButton.extended(
+          PerseveranceButton(
             onPressed: () => _showAddTaskDialog(context),
-            icon: const Icon(Icons.add_task),
-            label: const Text('New Task'),
-            backgroundColor: PerseveranceColors.buttonFill,
-            foregroundColor: PerseveranceColors.primaryButtonText,
+            child: Row(
+              children: [
+                Icon(Icons.add_task),
+                SizedBox(width: 8),
+                Text('New Task'),
+              ],
+            ),
+            tooltip: 'Add new task',
+            semanticsLabel: 'Add new task',
           ),
           const SizedBox(height: 12),
           if (membersAsync is AsyncData && (membersAsync.value as List).isNotEmpty)
-            FloatingActionButton.extended(
+            PerseveranceButton(
               onPressed: () => _showAddMeetingDialog(context),
-              icon: const Icon(Icons.calendar_month),
-              label: const Text('New Meeting'),
-              backgroundColor: PerseveranceColors.buttonFill,
-              foregroundColor: PerseveranceColors.primaryButtonText,
+              child: Row(
+                children: [
+                  Icon(Icons.calendar_month),
+                  SizedBox(width: 8),
+                  Text('New Meeting'),
+                ],
+              ),
+              tooltip: 'Schedule new meeting',
+              semanticsLabel: 'Schedule new meeting',
             ),
         ],
       ),
@@ -155,9 +166,9 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
   }
 
   Widget _buildAttendanceSummary(List<dynamic> members) {
-    final present = members.length; // All are present by default
-    final absent = 0;
-    final late = 0;
+    final present = members.where((m) => m['attendanceStatus'] == 'present').length;
+    final absent = members.where((m) => m['attendanceStatus'] == 'absent').length;
+    final late = members.where((m) => m['attendanceStatus'] == 'late').length;
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -168,11 +179,24 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
             _buildAttendanceStat('Absent', absent, Colors.red),
             _buildAttendanceStat('Late', late, Colors.orange),
             const SizedBox(width: 12),
-            ElevatedButton.icon(
-              onPressed: () {}, // TODO: Check-In
+            PerseveranceButton.icon(
+              onPressed: () async {
+                // Example: Mark current user as present
+                final authState = ref.read(authProvider);
+                final userId = authState.valueOrNull?.id;
+                if (userId != null) {
+                  final db = ref.read(databaseServiceProvider);
+                  await db.updateDocument(
+                    collectionId: 'users',
+                    documentId: userId,
+                    data: {'attendanceStatus': 'present'},
+                  );
+                  setState(() {});
+                }
+              },
               icon: const Icon(Icons.how_to_reg),
               label: const Text('Check-In'),
-              style: ElevatedButton.styleFrom(
+              style: PerseveranceButton.styleFrom(
                 backgroundColor: PerseveranceColors.buttonFill,
                 foregroundColor: PerseveranceColors.primaryButtonText,
                 elevation: 0,
@@ -206,8 +230,8 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
     }
     return Row(
       children: [
-        Expanded(
-          child: TextField(
+        Flexible(
+          child: PerseveranceTextField(
             decoration: InputDecoration(
               hintText: 'Search tasks...',
               prefixIcon: const Icon(Icons.search),
@@ -248,10 +272,10 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
   }
 
   Widget _buildDropdownFilter<T>({required String label, required T? value, required List<T> items, required String Function(T) display, required void Function(T?) onChanged}) {
-    return DropdownButton<T>(
+    return PerseveranceDropdownButton<T>(
       value: value,
       hint: Text(label),
-      items: items.map((e) => DropdownMenuItem<T>(value: e, child: Text(display(e)))).toList(),
+      items: items.map((e) => PerseveranceDropdownMenuItem<T>(value: e, child: Text(display(e)))).toList(),
       onChanged: onChanged,
       underline: const SizedBox(),
       style: const TextStyle(fontSize: 14),
@@ -276,8 +300,26 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
         return TaskCard(
           task: localTask,
           onTap: () => _showTaskDetails(compTask),
-          onEdit: () {}, // TODO: Edit
-          onComplete: () {}, // TODO: Complete
+          onEdit: (task) async {
+            final db = ref.read(databaseServiceProvider);
+            // Show a dialog or navigate to an edit screen as needed
+            // For now, just mark as 'editing' (example)
+            await db.updateDocument(
+              collectionId: 'tasks',
+              documentId: task['id'],
+              data: {'status': 'editing'},
+            );
+            setState(() {});
+          },
+          onComplete: (task) async {
+            final db = ref.read(databaseServiceProvider);
+            await db.updateDocument(
+              collectionId: 'tasks',
+              documentId: task['id'],
+              data: {'status': 'completed'},
+            );
+            setState(() {});
+          },
         );
       }).toList(),
     );
@@ -413,7 +455,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
             Text('Hours Logged: ${member.hoursLogged.toStringAsFixed(1)}h'),
           ],
         ),
-        actions: [TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Close'))],
+        actions: [PerseveranceButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Close'))],
       ),
     );
   }
@@ -436,7 +478,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
             // Text('Category: ${task.category.name[0].toUpperCase() + task.category.name.substring(1)}'),
           ],
         ),
-        actions: [TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Close'))],
+        actions: [PerseveranceButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Close'))],
       ),
     );
   }
@@ -481,10 +523,6 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
   }
 
   // --- Placeholder Data ---
-  // The following methods are deprecated and not used anymore:
-  // List<Member> _getPlaceholderMembers() { ... }
-  // List<Task> _getPlaceholderTasks() { ... }
-  // List<Meeting> _getPlaceholderMeetings() { ... }
   Member _userMapToMember(Map<String, dynamic> user) {
     // Map Appwrite user fields to Member fields as best as possible
     return Member(

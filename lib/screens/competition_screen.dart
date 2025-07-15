@@ -5,6 +5,7 @@ import '../widgets/competition/event_calendar_widget.dart';
 import '../widgets/competition/checklist_widget.dart';
 import '../widgets/competition/live_dashboard_widget.dart';
 import '../widgets/competition/post_competition_widget.dart';
+import '../widgets/custom_button.dart';
 
 class CompetitionScreen extends ConsumerStatefulWidget {
   const CompetitionScreen({super.key});

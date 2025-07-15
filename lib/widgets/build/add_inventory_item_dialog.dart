@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/inventory_item.dart';
 import '../../utils/colors.dart';
+import '../../utils/ai_helpers.dart';
 
 class AddInventoryItemDialog extends StatefulWidget {
   final Function(InventoryItem) onItemAdded;
@@ -39,6 +40,12 @@ class _AddInventoryItemDialogState extends State<AddInventoryItemDialog> {
   bool _loading = false;
   String? _error;
 
+  // New state variables for AI suggestions
+  bool _isLoadingNameSuggestion = false;
+  String? _nameSuggestionError;
+  bool _isLoadingLocationSuggestion = false;
+  String? _locationSuggestionError;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -51,45 +58,33 @@ class _AddInventoryItemDialogState extends State<AddInventoryItemDialog> {
   }
 
   Future<void> _fetchNameSuggestion(String input) async {
-    // TODO: Replace with actual AI service call
-    if (input.isEmpty) {
+    setState(() => _isLoadingNameSuggestion = true);
+    try {
+      final suggestion = await AIHelpers.getTextCompletion(input, 'inventory_item_name');
       setState(() {
-        _suggestedName = null;
-        _tipName = null;
+        _nameController.text = suggestion;
+        _isLoadingNameSuggestion = false;
       });
-      return;
-    }
-    if (input.length < 3) {
+    } catch (e) {
       setState(() {
-        _suggestedName = null;
-        _tipName = 'Use a descriptive part name.';
-      });
-    } else {
-      setState(() {
-        _suggestedName = 'VEX $input';
-        _tipName = null;
+        _isLoadingNameSuggestion = false;
+        _nameSuggestionError = e.toString();
       });
     }
   }
 
   Future<void> _fetchLocationSuggestion(String input) async {
-    // TODO: Replace with actual AI service call
-    if (input.isEmpty) {
+    setState(() => _isLoadingLocationSuggestion = true);
+    try {
+      final suggestion = await AIHelpers.getTextCompletion(input, 'inventory_item_location');
       setState(() {
-        _suggestedLocation = null;
-        _tipLocation = null;
+        _locationController.text = suggestion;
+        _isLoadingLocationSuggestion = false;
       });
-      return;
-    }
-    if (input.length < 2) {
+    } catch (e) {
       setState(() {
-        _suggestedLocation = null;
-        _tipLocation = 'Specify a shelf, bin, or area.';
-      });
-    } else {
-      setState(() {
-        _suggestedLocation = 'Bin $input';
-        _tipLocation = null;
+        _isLoadingLocationSuggestion = false;
+        _locationSuggestionError = e.toString();
       });
     }
   }
@@ -131,6 +126,16 @@ class _AddInventoryItemDialogState extends State<AddInventoryItemDialog> {
                 onChanged: (v) => _fetchNameSuggestion(v),
                 validator: (v) => v == null || v.isEmpty ? 'Enter a name' : null,
               ),
+              if (_isLoadingNameSuggestion)
+                const Padding(
+                  padding: EdgeInsets.only(top: 8.0),
+                  child: CircularProgressIndicator(),
+                ),
+              if (_nameSuggestionError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(_nameSuggestionError!, style: const TextStyle(color: Colors.red)),
+                ),
               if (_suggestedName != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 4.0),
@@ -203,6 +208,16 @@ class _AddInventoryItemDialogState extends State<AddInventoryItemDialog> {
                 onChanged: (v) => _fetchLocationSuggestion(v),
                 validator: (v) => v == null || v.isEmpty ? 'Enter a location' : null,
               ),
+              if (_isLoadingLocationSuggestion)
+                const Padding(
+                  padding: EdgeInsets.only(top: 8.0),
+                  child: CircularProgressIndicator(),
+                ),
+              if (_locationSuggestionError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(_locationSuggestionError!, style: const TextStyle(color: Colors.red)),
+                ),
               if (_suggestedLocation != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 4.0),
@@ -263,8 +278,10 @@ class _AddInventoryItemDialogState extends State<AddInventoryItemDialog> {
           onPressed: _loading ? null : () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        ElevatedButton(
+        FilledButton(
           onPressed: _loading ? null : _submitForm,
+          tooltip: 'Add Inventory Item',
+          semanticLabel: 'Add Inventory Item',
           child: const Text('Add'),
         ),
       ],

@@ -16,6 +16,7 @@ import 'competition_screen.dart';
 import 'build_screen.dart';
 import 'team_screen.dart';
 import 'analytics_screen.dart';
+import '../widgets/custom_button.dart';
 
 /// Dashboard Screen
 /// 
@@ -164,12 +165,36 @@ final teamTasksProvider = (String teamId) => FutureProvider<List<Task>>((ref) as
 
 // Helper: Provider for team stats
 final _teamStatsProvider = (String teamId) => FutureProvider<Map<String, dynamic>>((ref) async {
-  // Return mock data for now since getTeamMatches is not implemented
+  final db = ref.watch(databaseServiceProvider);
+  final matches = await db.listDocuments(
+    collectionId: 'matches',
+    queries: [Query.equal('teamIds', teamId)],
+  );
+  int wins = 0;
+  int losses = 0;
+  double totalScore = 0;
+  int matchCount = matches.length;
+  for (final match in matches) {
+    final scores = match['scores'] ?? {};
+    final allianceColor = match['allianceColor'];
+    final teamScore = scores[allianceColor] ?? 0;
+    final opponentColor = allianceColor == 'red' ? 'blue' : 'red';
+    final opponentScore = scores[opponentColor] ?? 0;
+    if (teamScore > opponentScore) {
+      wins++;
+    } else if (teamScore < opponentScore) {
+      losses++;
+    }
+    totalScore += teamScore.toDouble();
+  }
+  final averageScore = matchCount > 0 ? totalScore / matchCount : 0;
+  // Ranking logic can be more complex; for now, just use win count as a proxy
+  final currentRanking = wins + 1;
   return {
-    'wins': 5,
-    'losses': 2,
-    'averageScore': 85,
-    'currentRanking': 3,
+    'wins': wins,
+    'losses': losses,
+    'averageScore': averageScore,
+    'currentRanking': currentRanking,
   };
 });
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/colors.dart';
+import '../widgets/custom_button.dart';
 
 /// Home Page Screen
 /// 
@@ -92,7 +93,7 @@ class HomePage extends StatelessWidget {
                         title: 'Team Members',
                         subtitle: 'Manage team roster and roles',
                         onTap: () {
-                          // TODO: Navigate to team members screen
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => TeamScreen()));
                         },
                       ),
                       const SizedBox(height: 16),
@@ -103,7 +104,7 @@ class HomePage extends StatelessWidget {
                         title: 'Events & Competitions',
                         subtitle: 'View upcoming events and results',
                         onTap: () {
-                          // TODO: Navigate to events screen
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => EventsScreen()));
                         },
                       ),
                       const SizedBox(height: 16),
@@ -114,7 +115,7 @@ class HomePage extends StatelessWidget {
                         title: 'Robot Management',
                         subtitle: 'Track robot builds and maintenance',
                         onTap: () {
-                          // TODO: Navigate to robot management screen
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => RobotManagementScreen()));
                         },
                       ),
                       const SizedBox(height: 16),
@@ -125,7 +126,7 @@ class HomePage extends StatelessWidget {
                         title: 'Performance Analytics',
                         subtitle: 'View team statistics and progress',
                         onTap: () {
-                          // TODO: Navigate to analytics screen
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => AnalyticsScreen()));
                         },
                       ),
                     ],
@@ -149,11 +150,28 @@ class HomePage extends StatelessWidget {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: PerseveranceButton(
         onPressed: () {
-          // TODO: Add new item or quick action
+          // Example: Open a dialog for quick actions
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text('Quick Action'),
+              content: Text('Choose a quick action to perform.'),
+              actions: [
+                PerseveranceButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Close'),
+                  tooltip: 'Close quick action dialog',
+                  semanticsLabel: 'Close quick action dialog',
+                ),
+              ],
+            ),
+          );
         },
         child: const Icon(Icons.add),
+        tooltip: 'Add new item or quick action',
+        semanticsLabel: 'Add new item or quick action',
       ),
     );
   }
