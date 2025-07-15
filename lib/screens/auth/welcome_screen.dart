@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../utils/colors.dart';
 import 'login_screen.dart';
 import 'signup_screen.dart';
+import '../../widgets/custom_button.dart';
 
 /// Welcome Screen
 /// 
@@ -110,64 +111,35 @@ class WelcomeScreen extends StatelessWidget {
               // Authentication Buttons
               Column(
                 children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SignUpScreen(),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: PerseveranceColors.primary,
-                        foregroundColor: PerseveranceColors.onPrimary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                  PerseveranceButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SignUpScreen(),
                         ),
-                      ),
-                      child: Text(
-                        'Get Started',
-                        style: GoogleFonts.inter(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+                      );
+                    },
+                    label: 'Get Started',
+                    tooltip: 'Sign up for a new account',
+                    semanticsLabel: 'Sign up for a new account',
                   ),
                   
                   const SizedBox(height: 16),
                   
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoginScreen(),
-                          ),
-                        );
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: PerseveranceColors.onPrimary,
-                        side: BorderSide(color: PerseveranceColors.onPrimary),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                  PerseveranceButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LoginScreen(),
                         ),
-                      ),
-                      child: Text(
-                        'Sign In',
-                        style: GoogleFonts.inter(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+                      );
+                    },
+                    label: 'Sign In',
+                    tooltip: 'Sign in to your existing account',
+                    semanticsLabel: 'Sign in to your existing account',
+                    outlined: true,
                   ),
                 ],
               ),
@@ -178,7 +150,7 @@ class WelcomeScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  TextButton(
+                  PerseveranceButton(
                     onPressed: () {
                       showDialog(
                         context: context,
@@ -194,12 +166,12 @@ class WelcomeScreen extends StatelessWidget {
                         ),
                       );
                     },
-                    child: Text(
-                      'Terms',
-                      style: GoogleFonts.inter(
-                        color: PerseveranceColors.onSurfaceVariant,
-                        fontSize: 14,
-                      ),
+                    label: 'Terms',
+                    tooltip: 'View terms of service',
+                    semanticsLabel: 'View terms of service',
+                    textStyle: GoogleFonts.inter(
+                      color: PerseveranceColors.onSurfaceVariant,
+                      fontSize: 14,
                     ),
                   ),
                   Text(
@@ -209,7 +181,7 @@ class WelcomeScreen extends StatelessWidget {
                       fontSize: 14,
                     ),
                   ),
-                  TextButton(
+                  PerseveranceButton(
                     onPressed: () {
                       showDialog(
                         context: context,
@@ -225,12 +197,12 @@ class WelcomeScreen extends StatelessWidget {
                         ),
                       );
                     },
-                    child: Text(
-                      'Privacy',
-                      style: GoogleFonts.inter(
-                        color: PerseveranceColors.onSurfaceVariant,
-                        fontSize: 14,
-                      ),
+                    label: 'Privacy',
+                    tooltip: 'View privacy policy',
+                    semanticsLabel: 'View privacy policy',
+                    textStyle: GoogleFonts.inter(
+                      color: PerseveranceColors.onSurfaceVariant,
+                      fontSize: 14,
                     ),
                   ),
                 ],

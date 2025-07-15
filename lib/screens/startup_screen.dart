@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/colors.dart';
 import '../config/appwrite_config.dart';
 import 'main_navigation.dart';
+import '../widgets/custom_button.dart';
 
 class StartupScreen extends ConsumerStatefulWidget {
   const StartupScreen({super.key});
