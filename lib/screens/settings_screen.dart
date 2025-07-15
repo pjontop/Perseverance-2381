@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/colors.dart';
 import '../services/haptic_service.dart';
+import '../widgets/custom_button.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -392,11 +393,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ),
         actions: [
-          TextButton(
+          PerseveranceButton(
             onPressed: () => Navigator.pop(context),
             child: Text('Cancel'),
           ),
-          ElevatedButton(
+          PerseveranceButton(
             onPressed: () {
               HapticService.success();
               Navigator.pop(context);
@@ -420,11 +421,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ),
         actions: [
-          TextButton(
+          PerseveranceButton(
             onPressed: () => Navigator.pop(context),
             child: Text('Cancel'),
           ),
-          ElevatedButton(
+          PerseveranceButton(
             onPressed: () {
               HapticService.success();
               Navigator.pop(context);
@@ -448,11 +449,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ),
         actions: [
-          TextButton(
+          PerseveranceButton(
             onPressed: () => Navigator.pop(context),
             child: Text('Cancel'),
           ),
-          ElevatedButton(
+          PerseveranceButton(
             onPressed: () {
               HapticService.success();
               Navigator.pop(context);
@@ -476,11 +477,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ),
         actions: [
-          TextButton(
+          PerseveranceButton(
             onPressed: () => Navigator.pop(context),
             child: Text('Cancel'),
           ),
-          ElevatedButton(
+          PerseveranceButton(
             onPressed: () {
               HapticService.success();
               Navigator.pop(context);
@@ -500,7 +501,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         title: Text('Export Data'),
         content: Text('Data exported successfully!'),
         actions: [
-          ElevatedButton(
+          PerseveranceButton(
             onPressed: () {
               HapticService.success();
               Navigator.pop(context);
@@ -520,7 +521,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         title: Text('Backup Data'),
         content: Text('Backup completed successfully!'),
         actions: [
-          ElevatedButton(
+          PerseveranceButton(
             onPressed: () {
               HapticService.success();
               Navigator.pop(context);
@@ -540,11 +541,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         title: Text('Clear Cache'),
         content: Text('Are you sure you want to clear the cache?'),
         actions: [
-          TextButton(
+          PerseveranceButton(
             onPressed: () => Navigator.pop(context),
             child: Text('Cancel'),
           ),
-          ElevatedButton(
+          PerseveranceButton(
             onPressed: () {
               HapticService.success();
               Navigator.pop(context);
@@ -564,11 +565,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         title: Text('Reset App'),
         content: Text('This will clear all data. Are you sure?'),
         actions: [
-          TextButton(
+          PerseveranceButton(
             onPressed: () => Navigator.pop(context),
             child: Text('Cancel'),
           ),
-          ElevatedButton(
+          PerseveranceButton(
             onPressed: () {
               HapticService.success();
               Navigator.pop(context);
@@ -587,7 +588,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         title: Text('About'),
         content: Text('Team Perseverance App v1.0.0\n\nBuilt with Flutter and AI-enhanced features.'),
         actions: [
-          ElevatedButton(
+          PerseveranceButton(
             onPressed: () {
               HapticService.lightTap();
               Navigator.pop(context);

@@ -3,6 +3,7 @@ import '../utils/colors.dart';
 import 'scout_screen.dart';
 import 'competition_screen.dart';
 import 'analytics_screen.dart';
+import '../widgets/custom_button.dart';
 
 /// Games Screen
 /// 

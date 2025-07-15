@@ -8,6 +8,7 @@ import '../widgets/analytics/team_productivity_widget.dart';
 import '../widgets/analytics/competition_intelligence_widget.dart';
 import '../widgets/analytics/resource_utilization_widget.dart';
 import 'settings_screen.dart';
+import '../widgets/custom_button.dart';
 
 class AnalyticsScreen extends ConsumerStatefulWidget {
   const AnalyticsScreen({super.key});
