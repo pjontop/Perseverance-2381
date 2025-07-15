@@ -97,11 +97,11 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton.icon(
+                  child: FilledButton.icon(
                     onPressed: () => _showStartMatchDialog(),
                     icon: const Icon(Icons.play_arrow),
                     label: const Text('Start Match'),
-                    style: ElevatedButton.styleFrom(
+                    style: FilledButton.styleFrom(
                       backgroundColor: PerseveranceColors.buttonFill,
                       foregroundColor: PerseveranceColors.primaryButtonText,
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -216,6 +216,8 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
                     _isTimerRunning ? Icons.pause : Icons.play_arrow,
                     color: PerseveranceColors.buttonFill,
                   ),
+                  tooltip: _isTimerRunning ? 'Pause Timer' : 'Start Timer',
+                  semanticsLabel: _isTimerRunning ? 'Pause Timer' : 'Start Timer',
                 ),
                 IconButton(
                   onPressed: () {
@@ -228,6 +230,8 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
                     Icons.refresh,
                     color: PerseveranceColors.buttonFill,
                   ),
+                  tooltip: 'Reset Timer',
+                  semanticsLabel: 'Reset Timer',
                 ),
               ],
             ),
@@ -283,8 +287,10 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
           onPressed: () {
             _updateScore(key, (currentScore - 1).clamp(0, 10));
           },
-          icon: const Icon(Icons.remove),
+          icon: Icon(Icons.remove),
           color: PerseveranceColors.buttonFill,
+          tooltip: 'Decrease Score',
+          semanticsLabel: 'Decrease Score',
         ),
         Container(
           width: 40,
@@ -307,8 +313,10 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
           onPressed: () {
             _updateScore(key, (currentScore + 1).clamp(0, 10));
           },
-          icon: const Icon(Icons.add),
+          icon: Icon(Icons.add),
           color: PerseveranceColors.buttonFill,
+          tooltip: 'Increase Score',
+          semanticsLabel: 'Increase Score',
         ),
       ],
     );
@@ -353,13 +361,13 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
   }
 
   Widget _buildActionButton(String label, IconData icon) {
-    return ElevatedButton.icon(
+    return FilledButton.icon(
       onPressed: () {
         _addNote('$label action recorded');
       },
       icon: Icon(icon, size: 16),
       label: Text(label, style: TextStyle(fontSize: 12)),
-      style: ElevatedButton.styleFrom(
+      style: FilledButton.styleFrom(
         backgroundColor: PerseveranceColors.buttonFill,
         foregroundColor: PerseveranceColors.primaryButtonText,
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -417,13 +425,13 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
           children: [
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton.icon(
+              child: FilledButton.icon(
                 onPressed: () {
                   _endMatch();
                 },
                 icon: const Icon(Icons.stop),
                 label: const Text('End Match'),
-                style: ElevatedButton.styleFrom(
+                style: FilledButton.styleFrom(
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -449,23 +457,23 @@ class _LiveMatchWidgetState extends ConsumerState<LiveMatchWidget> {
           style: TextStyle(color: PerseveranceColors.buttonFill),
         ),
         actions: [
-          TextButton(
+          FilledButton(
             onPressed: () {
               Navigator.pop(context);
               _startMatch('Q1', 'red');
             },
-            style: TextButton.styleFrom(
+            style: FilledButton.styleFrom(
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
             child: const Text('Red Alliance'),
           ),
-          TextButton(
+          FilledButton(
             onPressed: () {
               Navigator.pop(context);
               _startMatch('Q1', 'blue');
             },
-            style: TextButton.styleFrom(
+            style: FilledButton.styleFrom(
               backgroundColor: Colors.blue,
               foregroundColor: Colors.white,
             ),
