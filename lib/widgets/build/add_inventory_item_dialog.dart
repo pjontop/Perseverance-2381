@@ -278,8 +278,10 @@ class _AddInventoryItemDialogState extends State<AddInventoryItemDialog> {
           onPressed: _loading ? null : () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        ElevatedButton(
+        FilledButton(
           onPressed: _loading ? null : _submitForm,
+          tooltip: 'Add Inventory Item',
+          semanticLabel: 'Add Inventory Item',
           child: const Text('Add'),
         ),
       ],

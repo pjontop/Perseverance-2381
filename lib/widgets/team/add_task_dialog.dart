@@ -280,7 +280,7 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
           onPressed: _loading ? null : () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        ElevatedButton(
+        FilledButton(
           onPressed: _loading
               ? null
               : () {

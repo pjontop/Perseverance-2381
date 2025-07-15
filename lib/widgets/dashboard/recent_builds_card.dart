@@ -40,15 +40,17 @@ class RecentBuildsCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 if (onViewAll != null)
-                  TextButton(
+                  FilledButton(
                     onPressed: onViewAll,
-                    child: Text(
-                      'View All',
-                      style: TextStyle(
-                        color: PerseveranceColors.background,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    child: const Text('View All'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: PerseveranceColors.buttonFill,
+                      foregroundColor: PerseveranceColors.primaryButtonText,
                     ),
+                    autofocus: true,
+                    // Add tooltip and semantics label
+                    tooltip: 'View all recent builds',
+                    semanticsLabel: 'View all recent builds',
                   ),
               ],
             ),

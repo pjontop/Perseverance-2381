@@ -204,11 +204,11 @@ class ToolCard extends StatelessWidget {
                 children: [
                   if (tool.isAvailable && onCheckout != null)
                     Expanded(
-                      child: ElevatedButton.icon(
+                      child: FilledButton.icon(
                         onPressed: onCheckout,
                         icon: const Icon(Icons.logout, size: 16),
                         label: const Text('Check Out'),
-                        style: ElevatedButton.styleFrom(
+                        style: FilledButton.styleFrom(
                           backgroundColor: PerseveranceColors.buttonFill,
                           foregroundColor: PerseveranceColors.primaryButtonText,
                           shape: RoundedRectangleBorder(
@@ -219,11 +219,11 @@ class ToolCard extends StatelessWidget {
                     ),
                   if (tool.isCheckedOut && onReturn != null)
                     Expanded(
-                      child: ElevatedButton.icon(
+                      child: FilledButton.icon(
                         onPressed: onReturn,
                         icon: const Icon(Icons.undo, size: 16),
                         label: const Text('Return'),
-                        style: ElevatedButton.styleFrom(
+                        style: FilledButton.styleFrom(
                           backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
@@ -234,13 +234,13 @@ class ToolCard extends StatelessWidget {
                     ),
                   if (tool.needsMaintenance)
                     Expanded(
-                      child: ElevatedButton.icon(
+                      child: FilledButton.icon(
                         onPressed: () {
                           // TODO: Navigate to maintenance screen
                         },
                         icon: const Icon(Icons.build, size: 16),
                         label: const Text('Maintenance'),
-                        style: ElevatedButton.styleFrom(
+                        style: FilledButton.styleFrom(
                           backgroundColor: Colors.red,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
@@ -255,6 +255,8 @@ class ToolCard extends StatelessWidget {
                       onPressed: onEdit,
                       icon: const Icon(Icons.edit, size: 20),
                       color: PerseveranceColors.secondaryText,
+                      tooltip: 'Edit Tool',
+                      semanticLabel: 'Edit Tool',
                     ),
                   ],
                 ],

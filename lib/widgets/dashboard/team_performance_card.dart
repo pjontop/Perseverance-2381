@@ -48,15 +48,17 @@ class TeamPerformanceCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 if (onViewDetails != null)
-                  TextButton(
+                  FilledButton(
                     onPressed: onViewDetails,
-                    child: Text(
-                      'Details',
-                      style: TextStyle(
-                        color: PerseveranceColors.background,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    child: const Text('Details'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: PerseveranceColors.buttonFill,
+                      foregroundColor: PerseveranceColors.primaryButtonText,
                     ),
+                    autofocus: true,
+                    // Add tooltip and semantics label
+                    tooltip: 'View team performance details',
+                    semanticsLabel: 'View team performance details',
                   ),
               ],
             ),

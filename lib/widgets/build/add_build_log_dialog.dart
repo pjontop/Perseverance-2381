@@ -378,7 +378,7 @@ class _AddBuildLogDialogState extends State<AddBuildLogDialog> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    ElevatedButton.icon(
+                    FilledButton.icon(
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -388,7 +388,7 @@ class _AddBuildLogDialogState extends State<AddBuildLogDialog> {
                       },
                       icon: const Icon(Icons.camera_alt, size: 16),
                       label: const Text('Add Photos'),
-                      style: ElevatedButton.styleFrom(
+                      style: FilledButton.styleFrom(
                         backgroundColor: PerseveranceColors.buttonFill,
                         foregroundColor: PerseveranceColors.primaryButtonText,
                       ),
@@ -408,9 +408,9 @@ class _AddBuildLogDialogState extends State<AddBuildLogDialog> {
             style: TextStyle(color: PerseveranceColors.secondaryText),
           ),
         ),
-        ElevatedButton(
+        FilledButton(
           onPressed: _submitForm,
-          style: ElevatedButton.styleFrom(
+          style: FilledButton.styleFrom(
             backgroundColor: PerseveranceColors.buttonFill,
             foregroundColor: PerseveranceColors.primaryButtonText,
           ),

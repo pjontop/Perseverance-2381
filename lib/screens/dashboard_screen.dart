@@ -16,6 +16,7 @@ import 'competition_screen.dart';
 import 'build_screen.dart';
 import 'team_screen.dart';
 import 'analytics_screen.dart';
+import '../widgets/custom_button.dart';
 
 /// Dashboard Screen
 /// 
