@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/build_log.dart';
 import '../../utils/colors.dart';
+import '../../utils/ai_helpers.dart';
 
 class AddBuildLogDialog extends StatefulWidget {
   final Function(BuildLog) onBuildLogAdded;
@@ -50,45 +51,33 @@ class _AddBuildLogDialogState extends State<AddBuildLogDialog> {
   }
 
   Future<void> _fetchTitleSuggestion(String input) async {
-    // TODO: Replace with actual AI service call
-    if (input.isEmpty) {
+    setState(() => _loading = true);
+    try {
+      final suggestion = await AIHelpers.getTextCompletion(input, 'build_log_title');
       setState(() {
-        _suggestedTitle = null;
-        _tipTitle = null;
+        _titleController.text = suggestion;
+        _loading = false;
       });
-      return;
-    }
-    if (input.length < 4) {
+    } catch (e) {
       setState(() {
-        _suggestedTitle = null;
-        _tipTitle = 'Try to be more descriptive.';
-      });
-    } else {
-      setState(() {
-        _suggestedTitle = 'Document $input for future reference';
-        _tipTitle = null;
+        _loading = false;
+        _error = e.toString();
       });
     }
   }
 
   Future<void> _fetchDescriptionSuggestion(String input) async {
-    // TODO: Replace with actual AI service call
-    if (input.isEmpty) {
+    setState(() => _loading = true);
+    try {
+      final suggestion = await AIHelpers.getTextCompletion(input, 'build_log_description');
       setState(() {
-        _suggestedDescription = null;
-        _tipDescription = null;
+        _descriptionController.text = suggestion;
+        _loading = false;
       });
-      return;
-    }
-    if (input.length < 8) {
+    } catch (e) {
       setState(() {
-        _suggestedDescription = null;
-        _tipDescription = 'Add more details for clarity.';
-      });
-    } else {
-      setState(() {
-        _suggestedDescription = 'Include steps, issues, and results.';
-        _tipDescription = null;
+        _loading = false;
+        _error = e.toString();
       });
     }
   }
@@ -125,6 +114,19 @@ class _AddBuildLogDialogState extends State<AddBuildLogDialog> {
                   return null;
                 },
               ),
+              if (_loading)
+                const Padding(
+                  padding: EdgeInsets.only(top: 4.0),
+                  child: CircularProgressIndicator(),
+                ),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: Text(
+                    _error!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
               if (_suggestedTitle != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 4.0),
@@ -168,6 +170,19 @@ class _AddBuildLogDialogState extends State<AddBuildLogDialog> {
                   return null;
                 },
               ),
+              if (_loading)
+                const Padding(
+                  padding: EdgeInsets.only(top: 4.0),
+                  child: CircularProgressIndicator(),
+                ),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: Text(
+                    _error!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
               if (_suggestedDescription != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 4.0),
