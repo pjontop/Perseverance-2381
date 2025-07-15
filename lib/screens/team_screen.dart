@@ -57,21 +57,31 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          PerseveranceButton.extended(
+          PerseveranceButton(
             onPressed: () => _showAddTaskDialog(context),
-            icon: const Icon(Icons.add_task),
-            label: const Text('New Task'),
-            backgroundColor: PerseveranceColors.buttonFill,
-            foregroundColor: PerseveranceColors.primaryButtonText,
+            child: Row(
+              children: [
+                Icon(Icons.add_task),
+                SizedBox(width: 8),
+                Text('New Task'),
+              ],
+            ),
+            tooltip: 'Add new task',
+            semanticsLabel: 'Add new task',
           ),
           const SizedBox(height: 12),
           if (membersAsync is AsyncData && (membersAsync.value as List).isNotEmpty)
-            PerseveranceButton.extended(
+            PerseveranceButton(
               onPressed: () => _showAddMeetingDialog(context),
-              icon: const Icon(Icons.calendar_month),
-              label: const Text('New Meeting'),
-              backgroundColor: PerseveranceColors.buttonFill,
-              foregroundColor: PerseveranceColors.primaryButtonText,
+              child: Row(
+                children: [
+                  Icon(Icons.calendar_month),
+                  SizedBox(width: 8),
+                  Text('New Meeting'),
+                ],
+              ),
+              tooltip: 'Schedule new meeting',
+              semanticsLabel: 'Schedule new meeting',
             ),
         ],
       ),
