@@ -466,80 +466,71 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
   }
 
   Widget _buildTeamDatabaseTab() {
-    final teams = _getPlaceholderTeams();
-    final filteredTeams = teams.where((team) {
-      if (_searchQuery.isEmpty && _selectedRegion == null) return true;
-      
-      bool matchesSearch = _searchQuery.isEmpty || 
-          team['name'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          team['teamNumber'].toLowerCase().contains(_searchQuery.toLowerCase());
-      
-      bool matchesRegion = _selectedRegion == null || team['region'] == _selectedRegion!.name;
-      
-      return matchesSearch && matchesRegion;
-    }).toList();
-
-    return Column(
-      children: [
-        // Search and filter
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              TextField(
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
-                decoration: InputDecoration(
-                  hintText: 'Search teams by name or number...',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+    final teamsAsync = ref.watch(teamsProvider);
+    return AsyncValueWidget(
+      value: teamsAsync,
+      builder: (teams) => Column(
+        children: [
+          // Search and filter
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                TextField(
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Search teams by name or number...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: PerseveranceColors.background.withOpacity(0.1),
                   ),
-                  filled: true,
-                  fillColor: PerseveranceColors.background.withOpacity(0.1),
                 ),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<TeamRegion>(
-                value: _selectedRegion,
-                decoration: const InputDecoration(
-                  labelText: 'Filter by Region',
-                  border: OutlineInputBorder(),
-                ),
-                items: [
-                  const DropdownMenuItem<TeamRegion>(
-                    value: null,
-                    child: Text('All Regions'),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<TeamRegion>(
+                  value: _selectedRegion,
+                  decoration: const InputDecoration(
+                    labelText: 'Filter by Region',
+                    border: OutlineInputBorder(),
                   ),
-                  ...TeamRegion.values.map((region) => DropdownMenuItem(
-                    value: region,
-                    child: Text(region.displayName),
-                  )),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedRegion = value;
-                  });
-                },
-              ),
-            ],
+                  items: [
+                    const DropdownMenuItem<TeamRegion>(
+                      value: null,
+                      child: Text('All Regions'),
+                    ),
+                    ...TeamRegion.values.map((region) => DropdownMenuItem(
+                      value: region,
+                      child: Text(region.displayName),
+                    )),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedRegion = value;
+                    });
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
-        
-        // Teams list
-        Expanded(
-          child: ListView.builder(
-            itemCount: filteredTeams.length,
-            itemBuilder: (context, index) {
-              final team = filteredTeams[index];
-              return _buildTeamCard(team);
-            },
+          
+          // Teams list
+          Expanded(
+            child: ListView.builder(
+              itemCount: teams.length,
+              itemBuilder: (context, index) {
+                final team = teams[index];
+                return _buildTeamCard(team);
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -909,88 +900,5 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
     if (compatibility >= 80) return Colors.green;
     if (compatibility >= 60) return Colors.orange;
     return Colors.red;
-  }
-
-  // Placeholder data methods
-  List<Map<String, dynamic>> _getPlaceholderTeams() {
-    return [
-      {
-        'id': '1',
-        'teamNumber': '1234',
-        'name': 'RoboRams',
-        'region': 'northAmerica',
-        'school': 'Lincoln High School',
-        'avgScore': '85.5',
-        'winRate': '78%',
-        'strengths': ['Strong autonomous', 'Good driver control', 'Reliable robot'],
-        'weaknesses': ['Slow endgame', 'Limited climb ability'],
-      },
-      {
-        'id': '2',
-        'teamNumber': '5678',
-        'name': 'Tech Titans',
-        'region': 'northAmerica',
-        'school': 'Washington Tech',
-        'avgScore': '92.3',
-        'winRate': '85%',
-        'strengths': ['Excellent scoring', 'Fast robot', 'Good strategy'],
-        'weaknesses': ['Sometimes unreliable', 'Complex mechanisms'],
-      },
-      {
-        'id': '3',
-        'teamNumber': '9012',
-        'name': 'CyberCats',
-        'region': 'europe',
-        'school': 'European Academy',
-        'avgScore': '78.9',
-        'winRate': '72%',
-        'strengths': ['Consistent performance', 'Good teamwork'],
-        'weaknesses': ['Limited scoring capacity', 'Slow autonomous'],
-      },
-      {
-        'id': '4',
-        'teamNumber': '3456',
-        'name': 'Asian Dragons',
-        'region': 'asia',
-        'school': 'Tokyo Robotics',
-        'avgScore': '88.7',
-        'winRate': '81%',
-        'strengths': ['Innovative design', 'High scoring potential'],
-        'weaknesses': ['Complex maintenance', 'Unreliable in pressure'],
-      },
-    ];
-  }
-
-  List<Map<String, dynamic>> _getAllianceRecommendations() {
-    return [
-      {
-        'teamNumber': '5678',
-        'name': 'Tech Titans',
-        'compatibility': 92,
-        'score': 'A+',
-        'reasoning': 'Excellent scoring capability complements our defensive strategy. Strong autonomous and driver control.',
-      },
-      {
-        'teamNumber': '1234',
-        'name': 'RoboRams',
-        'compatibility': 85,
-        'score': 'A',
-        'reasoning': 'Reliable robot with good autonomous. Good for consistent performance.',
-      },
-      {
-        'teamNumber': '9012',
-        'name': 'CyberCats',
-        'compatibility': 78,
-        'score': 'B+',
-        'reasoning': 'Consistent but limited scoring. Good backup option.',
-      },
-      {
-        'teamNumber': '3456',
-        'name': 'Asian Dragons',
-        'compatibility': 65,
-        'score': 'B',
-        'reasoning': 'High potential but unreliable under pressure. Risky choice.',
-      },
-    ];
   }
 } 

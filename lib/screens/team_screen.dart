@@ -155,9 +155,9 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
   }
 
   Widget _buildAttendanceSummary(List<dynamic> members) {
-    final present = members.length; // All are present by default
-    final absent = 0;
-    final late = 0;
+    final present = members.where((m) => m['attendanceStatus'] == 'present').length;
+    final absent = members.where((m) => m['attendanceStatus'] == 'absent').length;
+    final late = members.where((m) => m['attendanceStatus'] == 'late').length;
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -169,7 +169,20 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
             _buildAttendanceStat('Late', late, Colors.orange),
             const SizedBox(width: 12),
             ElevatedButton.icon(
-              onPressed: () {}, // TODO: Check-In
+              onPressed: () async {
+                // Example: Mark current user as present
+                final authState = ref.read(authProvider);
+                final userId = authState.valueOrNull?.id;
+                if (userId != null) {
+                  final db = ref.read(databaseServiceProvider);
+                  await db.updateDocument(
+                    collectionId: 'users',
+                    documentId: userId,
+                    data: {'attendanceStatus': 'present'},
+                  );
+                  setState(() {});
+                }
+              },
               icon: const Icon(Icons.how_to_reg),
               label: const Text('Check-In'),
               style: ElevatedButton.styleFrom(
@@ -276,8 +289,26 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
         return TaskCard(
           task: localTask,
           onTap: () => _showTaskDetails(compTask),
-          onEdit: () {}, // TODO: Edit
-          onComplete: () {}, // TODO: Complete
+          onEdit: (task) async {
+            final db = ref.read(databaseServiceProvider);
+            // Show a dialog or navigate to an edit screen as needed
+            // For now, just mark as 'editing' (example)
+            await db.updateDocument(
+              collectionId: 'tasks',
+              documentId: task['id'],
+              data: {'status': 'editing'},
+            );
+            setState(() {});
+          },
+          onComplete: (task) async {
+            final db = ref.read(databaseServiceProvider);
+            await db.updateDocument(
+              collectionId: 'tasks',
+              documentId: task['id'],
+              data: {'status': 'completed'},
+            );
+            setState(() {});
+          },
         );
       }).toList(),
     );
@@ -481,10 +512,6 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
   }
 
   // --- Placeholder Data ---
-  // The following methods are deprecated and not used anymore:
-  // List<Member> _getPlaceholderMembers() { ... }
-  // List<Task> _getPlaceholderTasks() { ... }
-  // List<Meeting> _getPlaceholderMeetings() { ... }
   Member _userMapToMember(Map<String, dynamic> user) {
     // Map Appwrite user fields to Member fields as best as possible
     return Member(
