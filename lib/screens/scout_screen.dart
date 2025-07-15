@@ -7,6 +7,7 @@ import '../models/appwrite/match_model.dart';
 import '../widgets/scout/live_match_widget.dart';
 import '../widgets/scout/team_database_widget.dart';
 import '../widgets/scout/alliance_recommendations_widget.dart';
+import '../widgets/custom_button.dart';
 
 class ScoutScreen extends StatefulWidget {
   const ScoutScreen({super.key});
@@ -150,20 +151,20 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                ElevatedButton.icon(
+                PerseveranceButton(
                   onPressed: _isMatchRunning ? _pauseMatch : _startMatch,
                   icon: Icon(_isMatchRunning ? Icons.pause : Icons.play_arrow),
                   label: Text(_isMatchRunning ? 'Pause' : 'Start'),
-                  style: ElevatedButton.styleFrom(
+                  style: PerseveranceButton.styleFrom(
                     backgroundColor: _isMatchRunning ? Colors.orange : Colors.green,
                     foregroundColor: Colors.white,
                   ),
                 ),
-                ElevatedButton.icon(
+                PerseveranceButton(
                   onPressed: _resetMatch,
                   icon: const Icon(Icons.refresh),
                   label: const Text('Reset'),
-                  style: ElevatedButton.styleFrom(
+                  style: PerseveranceButton.styleFrom(
                     backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
                   ),
@@ -193,36 +194,46 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(
-                  child: RadioListTile<AllianceColor>(
-                    title: Text(
+                Flexible(
+                  child: PerseveranceButton(
+                    onPressed: () {
+                      setState(() {
+                        _allianceColor = AllianceColor.red;
+                      });
+                    },
+                    icon: Icon(Icons.circle, color: Colors.red),
+                    label: Text(
                       'Red Alliance',
                       style: TextStyle(color: Colors.red),
                     ),
-                    value: AllianceColor.red,
-                    groupValue: _allianceColor,
-                    onChanged: (value) {
-                      setState(() {
-                        _allianceColor = value!;
-                      });
-                    },
-                    activeColor: PerseveranceColors.buttonFill,
+                    tooltip: 'Select Red Alliance',
+                    semanticsLabel: 'Select Red Alliance',
+                    style: PerseveranceButton.styleFrom(
+                      backgroundColor: _allianceColor == AllianceColor.red ? PerseveranceColors.buttonFill : null,
+                      foregroundColor: _allianceColor == AllianceColor.red ? PerseveranceColors.primaryButtonText : null,
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
                   ),
                 ),
-                Expanded(
-                  child: RadioListTile<AllianceColor>(
-                    title: Text(
+                Flexible(
+                  child: PerseveranceButton(
+                    onPressed: () {
+                      setState(() {
+                        _allianceColor = AllianceColor.blue;
+                      });
+                    },
+                    icon: Icon(Icons.circle, color: Colors.blue),
+                    label: Text(
                       'Blue Alliance',
                       style: TextStyle(color: Colors.blue),
                     ),
-                    value: AllianceColor.blue,
-                    groupValue: _allianceColor,
-                    onChanged: (value) {
-                      setState(() {
-                        _allianceColor = value!;
-                      });
-                    },
-                    activeColor: PerseveranceColors.buttonFill,
+                    tooltip: 'Select Blue Alliance',
+                    semanticsLabel: 'Select Blue Alliance',
+                    style: PerseveranceButton.styleFrom(
+                      backgroundColor: _allianceColor == AllianceColor.blue ? PerseveranceColors.buttonFill : null,
+                      foregroundColor: _allianceColor == AllianceColor.blue ? PerseveranceColors.primaryButtonText : null,
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
                   ),
                 ),
               ],
@@ -301,11 +312,11 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
             const SizedBox(height: 16),
             Row(
               children: [
-                Expanded(
+                Flexible(
                   child: _buildScoreCard('Goals Scored', 'goals', 0, 10),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
+                Flexible(
                   child: _buildScoreCard('Rings Collected', 'rings', 0, 20),
                 ),
               ],
@@ -313,11 +324,11 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(
+                Flexible(
                   child: _buildScoreCard('Climbs', 'climbs', 0, 5),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
+                Flexible(
                   child: _buildScoreCard('Parks', 'parks', 0, 3),
                 ),
               ],
@@ -369,15 +380,29 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              IconButton(
+              PerseveranceButton(
                 onPressed: () => _updateScore(key, -1, min),
-                icon: const Icon(Icons.remove_circle_outline),
-                color: PerseveranceColors.secondaryText,
+                icon: Icon(Icons.remove_circle_outline, size: 20),
+                label: Text('Decrease'),
+                tooltip: 'Decrease $title',
+                semanticsLabel: 'Decrease $title',
+                style: PerseveranceButton.styleFrom(
+                  backgroundColor: PerseveranceColors.secondaryText,
+                  foregroundColor: PerseveranceColors.primaryButtonText,
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
               ),
-              IconButton(
+              PerseveranceButton(
                 onPressed: () => _updateScore(key, 1, max),
-                icon: const Icon(Icons.add_circle_outline),
-                color: PerseveranceColors.buttonFill,
+                icon: Icon(Icons.add_circle_outline, size: 20),
+                label: Text('Increase'),
+                tooltip: 'Increase $title',
+                semanticsLabel: 'Increase $title',
+                style: PerseveranceButton.styleFrom(
+                  backgroundColor: PerseveranceColors.buttonFill,
+                  foregroundColor: PerseveranceColors.primaryButtonText,
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
               ),
             ],
           ),
@@ -405,30 +430,94 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
               spacing: 8,
               runSpacing: 8,
               children: [
-                _buildQuickActionButton('Climb', Icons.trending_up, () => _quickAction('climb')),
-                _buildQuickActionButton('Park', Icons.local_parking, () => _quickAction('park')),
-                _buildQuickActionButton('Score', Icons.sports_soccer, () => _quickAction('score')),
-                _buildQuickActionButton('Foul', Icons.warning, () => _quickAction('foul')),
-                _buildQuickActionButton('Technical', Icons.build, () => _quickAction('technical')),
-                _buildQuickActionButton('Yellow Card', Icons.warning_amber, () => _quickAction('yellow')),
-                _buildQuickActionButton('Red Card', Icons.block, () => _quickAction('red')),
+                PerseveranceButton(
+                  onPressed: () => _quickAction('climb'),
+                  icon: Icon(Icons.trending_up, size: 16),
+                  label: Text('Climb'),
+                  tooltip: 'Mark climb',
+                  semanticsLabel: 'Mark climb',
+                  style: PerseveranceButton.styleFrom(
+                    backgroundColor: PerseveranceColors.buttonFill,
+                    foregroundColor: PerseveranceColors.primaryButtonText,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+                PerseveranceButton(
+                  onPressed: () => _quickAction('park'),
+                  icon: Icon(Icons.local_parking, size: 16),
+                  label: Text('Park'),
+                  tooltip: 'Mark park',
+                  semanticsLabel: 'Mark park',
+                  style: PerseveranceButton.styleFrom(
+                    backgroundColor: PerseveranceColors.buttonFill,
+                    foregroundColor: PerseveranceColors.primaryButtonText,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+                PerseveranceButton(
+                  onPressed: () => _quickAction('score'),
+                  icon: Icon(Icons.sports_soccer, size: 16),
+                  label: Text('Score'),
+                  tooltip: 'Mark score',
+                  semanticsLabel: 'Mark score',
+                  style: PerseveranceButton.styleFrom(
+                    backgroundColor: PerseveranceColors.buttonFill,
+                    foregroundColor: PerseveranceColors.primaryButtonText,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+                PerseveranceButton(
+                  onPressed: () => _quickAction('foul'),
+                  icon: Icon(Icons.warning, size: 16),
+                  label: Text('Foul'),
+                  tooltip: 'Mark foul',
+                  semanticsLabel: 'Mark foul',
+                  style: PerseveranceButton.styleFrom(
+                    backgroundColor: PerseveranceColors.buttonFill,
+                    foregroundColor: PerseveranceColors.primaryButtonText,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+                PerseveranceButton(
+                  onPressed: () => _quickAction('technical'),
+                  icon: Icon(Icons.build, size: 16),
+                  label: Text('Technical'),
+                  tooltip: 'Mark technical',
+                  semanticsLabel: 'Mark technical',
+                  style: PerseveranceButton.styleFrom(
+                    backgroundColor: PerseveranceColors.buttonFill,
+                    foregroundColor: PerseveranceColors.primaryButtonText,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+                PerseveranceButton(
+                  onPressed: () => _quickAction('yellow'),
+                  icon: Icon(Icons.warning_amber, size: 16),
+                  label: Text('Yellow Card'),
+                  tooltip: 'Mark yellow card',
+                  semanticsLabel: 'Mark yellow card',
+                  style: PerseveranceButton.styleFrom(
+                    backgroundColor: PerseveranceColors.buttonFill,
+                    foregroundColor: PerseveranceColors.primaryButtonText,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+                PerseveranceButton(
+                  onPressed: () => _quickAction('red'),
+                  icon: Icon(Icons.block, size: 16),
+                  label: Text('Red Card'),
+                  tooltip: 'Mark red card',
+                  semanticsLabel: 'Mark red card',
+                  style: PerseveranceButton.styleFrom(
+                    backgroundColor: PerseveranceColors.buttonFill,
+                    foregroundColor: PerseveranceColors.primaryButtonText,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
               ],
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildQuickActionButton(String label, IconData icon, VoidCallback onPressed) {
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 16),
-      label: Text(label),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: PerseveranceColors.buttonFill,
-        foregroundColor: PerseveranceColors.primaryButtonText,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
     );
   }
@@ -484,7 +573,7 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
                   },
                   decoration: InputDecoration(
                     hintText: 'Search teams by name or number...',
-                    prefixIcon: const Icon(Icons.search),
+                    prefixIcon: Icon(Icons.search, size: 20),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -495,14 +584,17 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
                 const SizedBox(height: 12),
                 DropdownButtonFormField<TeamRegion>(
                   value: _selectedRegion,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Filter by Region',
-                    border: OutlineInputBorder(),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                   items: [
-                    const DropdownMenuItem<TeamRegion>(
+                    DropdownMenuItem(
                       value: null,
                       child: Text('All Regions'),
+                      enabled: false,
                     ),
                     ...TeamRegion.values.map((region) => DropdownMenuItem(
                       value: region,
@@ -514,6 +606,7 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
                       _selectedRegion = value;
                     });
                   },
+                  focusNode: FocusNode(),
                 ),
               ],
             ),
@@ -536,7 +629,7 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
 
   Widget _buildTeamCard(Map<String, dynamic> team) {
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: PerseveranceColors.buttonFill,
@@ -573,10 +666,16 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
               ),
           ],
         ),
-        trailing: IconButton(
+        trailing: PerseveranceButton(
           onPressed: () => _viewTeamDetails(team),
-          icon: const Icon(Icons.arrow_forward_ios),
-          color: PerseveranceColors.secondaryText,
+          icon: Icon(Icons.arrow_forward_ios, size: 16),
+          label: Text('View Details'),
+          tooltip: 'View details for Team ${team['teamNumber']}',
+          semanticsLabel: 'View details for Team ${team['teamNumber']}',
+          style: PerseveranceButton.styleFrom(
+            foregroundColor: PerseveranceColors.secondaryText,
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          ),
         ),
         onTap: () => _viewTeamDetails(team),
       ),
@@ -887,9 +986,11 @@ class _ScoutScreenState extends State<ScoutScreen> with TickerProviderStateMixin
           ],
         ),
         actions: [
-          TextButton(
+          PerseveranceButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('Close'),
+            label: Text('Close'),
+            tooltip: 'Close team details dialog',
+            semanticsLabel: 'Close team details dialog',
           ),
         ],
       ),

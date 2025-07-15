@@ -13,6 +13,7 @@ import '../models/user.dart' as app_user;
 import '../models/competition/task_model.dart' as comp_task;
 import '../models/task.dart' as local_task;
 import '../widgets/team/add_meeting_dialog.dart';
+import '../widgets/custom_button.dart';
 
 class TeamScreen extends ConsumerStatefulWidget {
   const TeamScreen({super.key});
@@ -56,7 +57,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          FloatingActionButton.extended(
+          PerseveranceButton.extended(
             onPressed: () => _showAddTaskDialog(context),
             icon: const Icon(Icons.add_task),
             label: const Text('New Task'),
@@ -65,7 +66,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
           ),
           const SizedBox(height: 12),
           if (membersAsync is AsyncData && (membersAsync.value as List).isNotEmpty)
-            FloatingActionButton.extended(
+            PerseveranceButton.extended(
               onPressed: () => _showAddMeetingDialog(context),
               icon: const Icon(Icons.calendar_month),
               label: const Text('New Meeting'),
@@ -168,7 +169,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
             _buildAttendanceStat('Absent', absent, Colors.red),
             _buildAttendanceStat('Late', late, Colors.orange),
             const SizedBox(width: 12),
-            ElevatedButton.icon(
+            PerseveranceButton.icon(
               onPressed: () async {
                 // Example: Mark current user as present
                 final authState = ref.read(authProvider);
@@ -185,7 +186,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
               },
               icon: const Icon(Icons.how_to_reg),
               label: const Text('Check-In'),
-              style: ElevatedButton.styleFrom(
+              style: PerseveranceButton.styleFrom(
                 backgroundColor: PerseveranceColors.buttonFill,
                 foregroundColor: PerseveranceColors.primaryButtonText,
                 elevation: 0,
@@ -219,8 +220,8 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
     }
     return Row(
       children: [
-        Expanded(
-          child: TextField(
+        Flexible(
+          child: PerseveranceTextField(
             decoration: InputDecoration(
               hintText: 'Search tasks...',
               prefixIcon: const Icon(Icons.search),
@@ -261,10 +262,10 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
   }
 
   Widget _buildDropdownFilter<T>({required String label, required T? value, required List<T> items, required String Function(T) display, required void Function(T?) onChanged}) {
-    return DropdownButton<T>(
+    return PerseveranceDropdownButton<T>(
       value: value,
       hint: Text(label),
-      items: items.map((e) => DropdownMenuItem<T>(value: e, child: Text(display(e)))).toList(),
+      items: items.map((e) => PerseveranceDropdownMenuItem<T>(value: e, child: Text(display(e)))).toList(),
       onChanged: onChanged,
       underline: const SizedBox(),
       style: const TextStyle(fontSize: 14),
@@ -444,7 +445,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
             Text('Hours Logged: ${member.hoursLogged.toStringAsFixed(1)}h'),
           ],
         ),
-        actions: [TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Close'))],
+        actions: [PerseveranceButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Close'))],
       ),
     );
   }
@@ -467,7 +468,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
             // Text('Category: ${task.category.name[0].toUpperCase() + task.category.name.substring(1)}'),
           ],
         ),
-        actions: [TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Close'))],
+        actions: [PerseveranceButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Close'))],
       ),
     );
   }

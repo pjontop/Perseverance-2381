@@ -10,6 +10,7 @@ import '../widgets/build/add_build_log_dialog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/app_providers.dart';
 import '../widgets/build/add_inventory_item_dialog.dart';
+import '../widgets/custom_button.dart';
 
 class BuildScreen extends ConsumerStatefulWidget {
   const BuildScreen({super.key});
@@ -81,7 +82,7 @@ class _BuildScreenState extends ConsumerState<BuildScreen> with TickerProviderSt
           _buildResourcesTab(),
         ],
       ),
-      floatingActionButton: _tabController.index == 1 ? FloatingActionButton(
+      floatingActionButton: _tabController.index == 1 ? PerseveranceButton(
         onPressed: () {
           showDialog(
             context: context,
@@ -130,12 +131,7 @@ class _BuildScreenState extends ConsumerState<BuildScreen> with TickerProviderSt
                 }
               },
             ),
-          );
-        },
-        backgroundColor: PerseveranceColors.buttonFill,
-        foregroundColor: PerseveranceColors.primaryButtonText,
-        child: const Icon(Icons.add),
-      ) : null,
+          ) : null,
     );
   }
 
@@ -464,7 +460,7 @@ class _BuildScreenState extends ConsumerState<BuildScreen> with TickerProviderSt
                   ),
                 ),
                 const SizedBox(height: 12),
-                ElevatedButton.icon(
+                PerseveranceButton(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -474,10 +470,8 @@ class _BuildScreenState extends ConsumerState<BuildScreen> with TickerProviderSt
                   },
                   icon: const Icon(Icons.qr_code_scanner),
                   label: const Text('Scan Barcode'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: PerseveranceColors.buttonFill,
-                    foregroundColor: PerseveranceColors.primaryButtonText,
-                  ),
+                  tooltip: 'Scan Barcode',
+                  semanticsLabel: 'Scan Barcode',
                 ),
               ],
             ),
